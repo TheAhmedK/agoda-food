@@ -1,4 +1,5 @@
-import type { Restaurant, RestaurantWithMenu, Dish, Order } from '../data/types'
+import type { Restaurant, RestaurantWithMenu, Dish, DishTag, Order } from '../data/types'
+import { DISH_TAGS } from '../data/types'
 
 const BASE = '/api'
 
@@ -16,6 +17,8 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 
 // Mongoose returns _id; normalise to id everywhere so UI code never sees raw DB fields.
 function toDish(d: Record<string, unknown>): Dish {
+  const rawTags = Array.isArray(d.tags) ? (d.tags as string[]) : []
+  const tags = rawTags.filter((t): t is DishTag => (DISH_TAGS as readonly string[]).includes(t))
   return {
     id: d._id as string,
     restaurantId: d.restaurantId as string,
@@ -24,8 +27,7 @@ function toDish(d: Record<string, unknown>): Dish {
     price: d.price as number,
     imageUrl: d.imageUrl as string,
     category: d.category as string,
-    isPopular: (d.isPopular as boolean | undefined) ?? false,
-    isVegetarian: (d.isVegetarian as boolean | undefined) ?? false,
+    tags,
     isAvailable: (d.isAvailable as boolean | undefined) ?? true,
   }
 }

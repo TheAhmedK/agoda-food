@@ -5,7 +5,7 @@
 import mongoose from 'mongoose'
 import dotenv from 'dotenv'
 import { Restaurant } from './models/Restaurant'
-import { Dish } from './models/Dish'
+import { Dish, type DishTag } from './models/Dish'
 
 dotenv.config()
 
@@ -17,8 +17,7 @@ interface SeedDish {
   price: number
   imageUrl: string
   category: string
-  isPopular?: boolean
-  isVegetarian?: boolean
+  tags?: DishTag[]
 }
 
 interface SeedRestaurant {
@@ -56,7 +55,7 @@ const seedData: SeedRestaurant[] = [
         price: 89,
         imageUrl: 'https://images.unsplash.com/photo-1562802378-063ec186a863?w=400&auto=format&fit=crop',
         category: 'Salads',
-        isPopular: true,
+        tags: ['Popular', 'Spicy'],
       },
       {
         name: 'Larb Moo',
@@ -64,7 +63,7 @@ const seedData: SeedRestaurant[] = [
         price: 99,
         imageUrl: 'https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?w=400&auto=format&fit=crop',
         category: 'Salads',
-        isPopular: true,
+        tags: ['Popular', 'Spicy'],
       },
       {
         name: 'Sticky Rice',
@@ -72,7 +71,7 @@ const seedData: SeedRestaurant[] = [
         price: 25,
         imageUrl: 'https://images.unsplash.com/photo-1603133872878-684f208fb84b?w=400&auto=format&fit=crop',
         category: 'Sides',
-        isVegetarian: true,
+        tags: ['Vegetarian', 'Vegan', 'GlutenFree'],
       },
       {
         name: 'Grilled Chicken (Gai Yang)',
@@ -80,7 +79,7 @@ const seedData: SeedRestaurant[] = [
         price: 179,
         imageUrl: 'https://images.unsplash.com/photo-1598515214211-89d3c73ae83b?w=400&auto=format&fit=crop',
         category: 'Grills',
-        isPopular: true,
+        tags: ['Popular'],
       },
       {
         name: 'Tom Saep',
@@ -88,6 +87,7 @@ const seedData: SeedRestaurant[] = [
         price: 129,
         imageUrl: 'https://images.unsplash.com/photo-1547592166-23ac45744acd?w=400&auto=format&fit=crop',
         category: 'Soups',
+        tags: ['Spicy'],
       },
     ],
   },
@@ -110,7 +110,7 @@ const seedData: SeedRestaurant[] = [
         price: 449,
         imageUrl: 'https://images.unsplash.com/photo-1569050467447-ce54b3bbc37d?w=400&auto=format&fit=crop',
         category: 'Sets',
-        isPopular: true,
+        tags: ['Popular'],
       },
       {
         name: 'Pork Slices',
@@ -125,7 +125,7 @@ const seedData: SeedRestaurant[] = [
         price: 199,
         imageUrl: 'https://images.unsplash.com/photo-1580476262798-bddd9f4b7369?w=400&auto=format&fit=crop',
         category: 'Seafood',
-        isPopular: true,
+        tags: ['Popular'],
       },
       {
         name: 'Noodle Bundle',
@@ -133,7 +133,7 @@ const seedData: SeedRestaurant[] = [
         price: 69,
         imageUrl: 'https://images.unsplash.com/photo-1555126634-323283e090fa?w=400&auto=format&fit=crop',
         category: 'Sides',
-        isVegetarian: true,
+        tags: ['Vegetarian'],
       },
     ],
   },
@@ -156,7 +156,7 @@ const seedData: SeedRestaurant[] = [
         price: 890,
         imageUrl: 'https://images.unsplash.com/photo-1525351484163-7529414344d8?w=400&auto=format&fit=crop',
         category: 'Signature',
-        isPopular: true,
+        tags: ['Popular'],
       },
       {
         name: 'Drunken Noodles (Pad Kee Mao)',
@@ -164,7 +164,7 @@ const seedData: SeedRestaurant[] = [
         price: 350,
         imageUrl: 'https://images.unsplash.com/photo-1562802378-063ec186a863?w=400&auto=format&fit=crop',
         category: 'Noodles',
-        isPopular: true,
+        tags: ['Popular', 'Spicy'],
       },
       {
         name: 'Tom Yum Goong',
@@ -172,6 +172,7 @@ const seedData: SeedRestaurant[] = [
         price: 450,
         imageUrl: 'https://images.unsplash.com/photo-1547592166-23ac45744acd?w=400&auto=format&fit=crop',
         category: 'Soups',
+        tags: ['Spicy'],
       },
       {
         name: 'Pad Thai Goong',
@@ -201,7 +202,7 @@ const seedData: SeedRestaurant[] = [
         price: 299,
         imageUrl: 'https://images.unsplash.com/photo-1628840042765-356cda07504e?w=400&auto=format&fit=crop',
         category: 'Pizza',
-        isPopular: true,
+        tags: ['Popular'],
       },
       {
         name: 'Margherita',
@@ -209,7 +210,7 @@ const seedData: SeedRestaurant[] = [
         price: 259,
         imageUrl: 'https://images.unsplash.com/photo-1574071318508-1cdbab80d002?w=400&auto=format&fit=crop',
         category: 'Pizza',
-        isVegetarian: true,
+        tags: ['Vegetarian'],
       },
       {
         name: 'Garlic Bread (4 pcs)',
@@ -217,7 +218,7 @@ const seedData: SeedRestaurant[] = [
         price: 89,
         imageUrl: 'https://images.unsplash.com/photo-1573140247632-f8fd74997d5c?w=400&auto=format&fit=crop',
         category: 'Sides',
-        isVegetarian: true,
+        tags: ['Vegetarian'],
       },
     ],
   },

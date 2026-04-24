@@ -1,3 +1,7 @@
+// Keep in sync with backend/src/models/Dish.ts DISH_TAGS
+export const DISH_TAGS = ['Popular', 'Vegetarian', 'Vegan', 'Spicy', 'GlutenFree'] as const
+export type DishTag = (typeof DISH_TAGS)[number]
+
 export interface Dish {
   id: string
   restaurantId: string
@@ -6,8 +10,7 @@ export interface Dish {
   price: number // THB
   imageUrl: string
   category: string
-  isPopular?: boolean
-  isVegetarian?: boolean
+  tags: DishTag[]
   isAvailable?: boolean
 }
 

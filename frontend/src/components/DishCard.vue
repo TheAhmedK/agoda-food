@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { Dish } from '../data/types'
+import type { Dish, DishTag } from '../data/types'
 import { useCartStore } from '../stores/cart'
 
 defineProps<{
@@ -9,6 +9,15 @@ defineProps<{
 }>()
 
 const cart = useCartStore()
+
+// Per-tag label + color. Centralising here keeps tag rendering consistent across the app.
+const TAG_STYLES: Record<DishTag, { label: string; classes: string }> = {
+  Popular: { label: '⭐ Popular', classes: 'bg-brand-500 text-white' },
+  Vegetarian: { label: '🌿 Veg', classes: 'bg-green-500 text-white' },
+  Vegan: { label: '🌱 Vegan', classes: 'bg-emerald-600 text-white' },
+  Spicy: { label: '🌶️ Spicy', classes: 'bg-red-500 text-white' },
+  GlutenFree: { label: 'GF', classes: 'bg-amber-500 text-white' },
+}
 </script>
 
 <template>
@@ -19,9 +28,15 @@ const cart = useCartStore()
         :alt="dish.name"
         class="w-full h-full object-cover"
       />
-      <div class="absolute top-2 left-2 flex gap-1">
-        <span v-if="dish.isPopular" class="bg-brand-500 text-white text-xs font-semibold px-2 py-0.5 rounded-full">Popular</span>
-        <span v-if="dish.isVegetarian" class="bg-green-500 text-white text-xs font-semibold px-2 py-0.5 rounded-full">🌿 Veg</span>
+      <div class="absolute top-2 left-2 flex flex-wrap gap-1">
+        <span
+          v-for="tag in dish.tags"
+          :key="tag"
+          class="text-xs font-semibold px-2 py-0.5 rounded-full"
+          :class="TAG_STYLES[tag].classes"
+        >
+          {{ TAG_STYLES[tag].label }}
+        </span>
       </div>
     </div>
 
