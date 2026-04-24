@@ -17,6 +17,7 @@ export interface IOrderItem {
 }
 
 export interface IOrder extends Document {
+  userId: Types.ObjectId
   restaurantId: Types.ObjectId
   restaurantName: string
   items: IOrderItem[]
@@ -42,6 +43,11 @@ const OrderItemSchema = new Schema<IOrderItem>(
 
 const OrderSchema = new Schema<IOrder>(
   {
+    userId: {
+      type: Schema.Types.ObjectId,
+      ref: 'User',
+      required: true,
+    },
     restaurantId: {
       type: Schema.Types.ObjectId,
       ref: 'Restaurant',
@@ -69,6 +75,7 @@ const OrderSchema = new Schema<IOrder>(
 )
 
 // Common operational queries
+OrderSchema.index({ userId: 1, createdAt: -1 })
 OrderSchema.index({ restaurantId: 1, status: 1, createdAt: -1 })
 OrderSchema.index({ createdAt: -1 })
 

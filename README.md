@@ -51,7 +51,7 @@ Open [http://localhost:3000](http://localhost:3000).
 
 | Command | What it does |
 |---|---|
-| `npm run seed` | Reset DB and seed 4 restaurants + 16 dishes |
+| `npm run seed` | Reset DB and seed 4 restaurants, 16 dishes, and 2 demo users (`alice`, `bob`) |
 | `npm run type-check` | TypeScript check both workspaces |
 | `npm run dev -w @agoda-food/backend` | Run any workspace script directly |
 
@@ -60,5 +60,13 @@ Open [http://localhost:3000](http://localhost:3000).
 1. ✅ Vue 3 UI (mocked)
 2. ✅ Express + MongoDB backend
 3. ✅ UI connected to real API
-4. ⏭️ LINE login + LIFF
+3a. ✅ User profiles + order history (username login stub, guest browsing)
+4. ⏭️ LINE login + LIFF (replaces the username stub at `routes/auth.ts` + `middleware/auth.ts`)
 5. ⏭️ Reliability (Redis, BullMQ, Zod)
+
+### Auth model (Stage 3a)
+
+- Demo login: enter a username on `/login` (try `alice` or `bob`).
+- The browser stores the returned user id in `localStorage` and sends it as `X-User-Id` on every request.
+- Browsing restaurants and menus is public. Placing an order, viewing your profile or order history requires login.
+- Stage 4 swaps `POST /api/auth/login` for `POST /api/auth/line` (verifies a LIFF id token, upserts the user by `lineUserId`). The rest of the app is unchanged.

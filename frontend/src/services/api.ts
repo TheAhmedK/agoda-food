@@ -1,16 +1,30 @@
-import type { Restaurant, RestaurantWithMenu, Dish, DishTag, Order } from '../data/types'
+import type { Restaurant, RestaurantWithMenu, Dish, DishTag, Order, User } from '../data/types'
 import { DISH_TAGS } from '../data/types'
 
 const BASE = '/api'
 
+// The currently-signed-in user id, injected as an x-user-id header on every
+// request. Set by the user store after login; cleared on logout.
+// Stage 4 replaces this with a real LINE-issued token, but the wiring stays put.
+let currentUserId: string | null = null
+
+export function setAuthUserId(id: string | null) {
+  currentUserId = id
+}
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+  if (currentUserId) headers['X-User-Id'] = currentUserId
+
   const res = await fetch(`${BASE}${path}`, {
-    headers: { 'Content-Type': 'application/json' },
     ...init,
+    headers: { ...headers, ...(init?.headers as Record<string, string> | undefined) },
   })
   if (!res.ok) {
     const body = await res.json().catch(() => ({}))
-    throw new Error(body.error ?? `Request failed: ${res.status}`)
+    const err = new Error(body.error ?? `Request failed: ${res.status}`) as Error & { status?: number }
+    err.status = res.status
+    throw err
   }
   return res.json()
 }
@@ -52,6 +66,7 @@ function toRestaurant(r: Record<string, unknown>): Restaurant {
 function toOrder(o: Record<string, unknown>): Order {
   return {
     id: o._id as string,
+    userId: o.userId as string,
     restaurantId: o.restaurantId as string,
     restaurantName: o.restaurantName as string,
     items: o.items as Order['items'],
@@ -60,6 +75,17 @@ function toOrder(o: Record<string, unknown>): Order {
     total: o.total as number,
     status: o.status as Order['status'],
     createdAt: o.createdAt as string,
+  }
+}
+
+function toUser(u: Record<string, unknown>): User {
+  return {
+    id: u._id as string,
+    displayName: u.displayName as string,
+    email: u.email as string,
+    phone: u.phone as string,
+    pictureUrl: u.pictureUrl as string | undefined,
+    deliveryLocation: u.deliveryLocation as string | undefined,
   }
 }
 
@@ -94,4 +120,39 @@ export async function placeOrder(payload: PlaceOrderPayload): Promise<Order> {
 export async function fetchOrder(id: string): Promise<Order> {
   const data = await request<Record<string, unknown>>(`/orders/${id}`)
   return toOrder(data)
+}
+
+// --- Auth + user ---
+
+export async function login(email: string): Promise<User> {
+  const data = await request<Record<string, unknown>>('/auth/login', {
+    method: 'POST',
+    body: JSON.stringify({ email }),
+  })
+  return toUser(data)
+}
+
+export async function fetchMe(): Promise<User> {
+  const data = await request<Record<string, unknown>>('/users/me')
+  return toUser(data)
+}
+
+export interface UpdateProfilePayload {
+  displayName?: string
+  email?: string
+  phone?: string
+  deliveryLocation?: string
+}
+
+export async function updateMe(payload: UpdateProfilePayload): Promise<User> {
+  const data = await request<Record<string, unknown>>('/users/me', {
+    method: 'PATCH',
+    body: JSON.stringify(payload),
+  })
+  return toUser(data)
+}
+
+export async function fetchMyOrders(): Promise<Order[]> {
+  const data = await request<Record<string, unknown>[]>('/users/me/orders')
+  return data.map(toOrder)
 }

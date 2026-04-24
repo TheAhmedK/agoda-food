@@ -5,6 +5,8 @@ import dotenv from 'dotenv'
 import path from 'path'
 import restaurantRoutes from './routes/restaurants'
 import orderRoutes from './routes/orders'
+import authRoutes from './routes/auth'
+import userRoutes from './routes/users'
 
 dotenv.config()
 
@@ -14,11 +16,19 @@ const MONGODB_URI = process.env.MONGODB_URI ?? 'mongodb://localhost:27017/agoda-
 const IS_PROD = process.env.NODE_ENV === 'production'
 
 // CORS only matters in dev — in prod the frontend is served from the same origin.
+// allowedHeaders must include x-user-id so the browser can send the auth stub header.
 if (!IS_PROD) {
-  app.use(cors({ origin: 'http://localhost:5173' }))
+  app.use(
+    cors({
+      origin: 'http://localhost:5173',
+      allowedHeaders: ['Content-Type', 'X-User-Id'],
+    }),
+  )
 }
 app.use(express.json())
 
+app.use('/api/auth', authRoutes)
+app.use('/api/users', userRoutes)
 app.use('/api/restaurants', restaurantRoutes)
 app.use('/api/orders', orderRoutes)
 

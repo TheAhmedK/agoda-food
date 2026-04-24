@@ -51,10 +51,20 @@ export interface OrderItem {
   note: string
 }
 
+export interface User {
+  id: string
+  displayName: string
+  email: string
+  phone: string
+  pictureUrl?: string
+  deliveryLocation?: string
+}
+
 export type OrderStatus = 'pending' | 'confirmed' | 'preparing' | 'delivered' | 'cancelled'
 
 export interface Order {
   id: string
+  userId: string
   restaurantId: string
   restaurantName: string
   items: OrderItem[]

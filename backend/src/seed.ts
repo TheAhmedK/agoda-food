@@ -6,6 +6,8 @@ import mongoose from 'mongoose'
 import dotenv from 'dotenv'
 import { Restaurant } from './models/Restaurant'
 import { Dish, type DishTag } from './models/Dish'
+import { User } from './models/User'
+import { Order } from './models/Order'
 
 dotenv.config()
 
@@ -224,12 +226,42 @@ const seedData: SeedRestaurant[] = [
   },
 ]
 
+const demoUsers = [
+  {
+    displayName: 'Alice Chen',
+    email: 'alice@agoda.com',
+    phone: '+66 81 234 5678',
+    deliveryLocation: 'Agoda HQ — Floor 27',
+  },
+  {
+    displayName: 'Bob Tanaka',
+    email: 'bob@agoda.com',
+    phone: '+66 92 345 6789',
+    deliveryLocation: 'Agoda HQ — Floor 15',
+  },
+]
+
 async function seed() {
   await mongoose.connect(MONGODB_URI)
   console.log('Connected to MongoDB')
 
-  await Promise.all([Restaurant.deleteMany({}), Dish.deleteMany({})])
-  console.log('Cleared existing restaurants and dishes')
+  // Drop whole collections so stale indexes from older schemas (e.g. username)
+  // don't linger. Ignore NamespaceNotFound on first run.
+  async function safeDrop(name: string) {
+    try {
+      await mongoose.connection.db!.dropCollection(name)
+    } catch (err) {
+      const code = (err as { code?: number }).code
+      if (code !== 26) throw err // 26 = NamespaceNotFound
+    }
+  }
+  await Promise.all([
+    safeDrop('restaurants'),
+    safeDrop('dishes'),
+    safeDrop('users'),
+    safeDrop('orders'),
+  ])
+  console.log('Cleared restaurants, dishes, users, and orders (with indexes)')
 
   let totalDishes = 0
   for (const { dishes, ...restaurantData } of seedData) {
@@ -240,7 +272,15 @@ async function seed() {
     console.log(`  · ${restaurant.name} (${dishes.length} dishes)`)
   }
 
-  console.log(`Seeded ${seedData.length} restaurants and ${totalDishes} dishes`)
+  const users = await User.insertMany(demoUsers)
+  console.log('Demo users:')
+  for (const u of users) {
+    console.log(`  · ${u.displayName.padEnd(14)} email=${u.email.padEnd(18)} _id=${u._id}`)
+  }
+
+  console.log(
+    `Seeded ${seedData.length} restaurants, ${totalDishes} dishes, and ${users.length} users`,
+  )
 
   await mongoose.disconnect()
   console.log('Done')

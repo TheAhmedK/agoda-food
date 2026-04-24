@@ -1,33 +1,121 @@
 <script setup lang="ts">
+import { ref, onMounted, onBeforeUnmount } from 'vue'
 import { useCartStore } from '../stores/cart'
+import { useUserStore } from '../stores/user'
 import { useRouter } from 'vue-router'
 
 const cart = useCartStore()
+const user = useUserStore()
 const router = useRouter()
+
+const menuOpen = ref(false)
+const menuRoot = ref<HTMLElement | null>(null)
+
+function toggleMenu() {
+  menuOpen.value = !menuOpen.value
+}
+
+function closeMenu() {
+  menuOpen.value = false
+}
+
+function go(path: string) {
+  closeMenu()
+  router.push(path)
+}
+
+function logout() {
+  user.clear()
+  cart.clearCart()
+  closeMenu()
+  router.push('/')
+}
+
+// Close on outside click. A DOM listener is used instead of a full-screen
+// overlay so the overlay can't accidentally cover the dropdown buttons (the
+// header is a new stacking context, so overlay z-index vs dropdown z-index
+// would be fiddly).
+function handleDocClick(e: MouseEvent) {
+  if (!menuOpen.value) return
+  const root = menuRoot.value
+  if (root && !root.contains(e.target as Node)) {
+    menuOpen.value = false
+  }
+}
+
+onMounted(() => document.addEventListener('click', handleDocClick))
+onBeforeUnmount(() => document.removeEventListener('click', handleDocClick))
 </script>
 
 <template>
   <header class="sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm">
-    <div class="max-w-2xl mx-auto px-4 h-14 flex items-center justify-between">
+    <div class="max-w-2xl mx-auto px-4 h-14 flex items-center justify-between gap-3">
       <button @click="router.push('/')" class="flex items-center gap-2">
         <span class="text-2xl">🍱</span>
         <span class="font-bold text-gray-900 text-lg">Agoda Food</span>
       </button>
 
-      <button
-        @click="router.push('/cart')"
-        class="relative flex items-center gap-1.5 bg-brand-500 text-white px-4 py-2 rounded-full text-sm font-medium active:scale-95 transition-transform"
-        :class="{ 'opacity-50 cursor-default': cart.totalItems === 0 }"
-      >
-        <span>🛒</span>
-        <span>Cart</span>
-        <span
-          v-if="cart.totalItems > 0"
-          class="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold"
+      <div class="flex items-center gap-2">
+        <!-- User chip (logged in) or Log in button (guest) -->
+        <div v-if="user.isLoggedIn" ref="menuRoot" class="relative">
+          <button
+            @click="toggleMenu"
+            class="flex items-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-800 px-3 py-1.5 rounded-full text-sm font-medium"
+          >
+            <span class="w-6 h-6 rounded-full bg-brand-500 text-white flex items-center justify-center text-xs font-bold">
+              {{ user.user!.displayName.charAt(0).toUpperCase() }}
+            </span>
+            <span class="hidden sm:inline">{{ user.user!.displayName }}</span>
+            <span class="text-xs text-gray-400">▾</span>
+          </button>
+
+          <!-- Dropdown -->
+          <div
+            v-if="menuOpen"
+            class="absolute right-0 mt-2 w-52 bg-white rounded-xl border border-gray-100 shadow-lg py-2 text-sm"
+          >
+            <div class="px-4 py-2 border-b border-gray-100">
+              <p class="font-semibold text-gray-900">{{ user.user!.displayName }}</p>
+              <p class="text-xs text-gray-500 truncate">{{ user.user!.email }}</p>
+            </div>
+            <button @click="go('/profile')" class="w-full text-left px-4 py-2 hover:bg-gray-50">
+              Profile
+            </button>
+            <button @click="go('/orders')" class="w-full text-left px-4 py-2 hover:bg-gray-50">
+              My orders
+            </button>
+            <button
+              @click="logout"
+              class="w-full text-left px-4 py-2 hover:bg-gray-50 text-red-600 border-t border-gray-100"
+            >
+              Log out
+            </button>
+          </div>
+        </div>
+
+        <button
+          v-else
+          @click="router.push('/login')"
+          class="bg-gray-100 hover:bg-gray-200 text-gray-800 px-3 py-1.5 rounded-full text-sm font-medium"
         >
-          {{ cart.totalItems }}
-        </span>
-      </button>
+          Log in
+        </button>
+
+        <button
+          @click="router.push('/cart')"
+          class="relative flex items-center gap-1.5 bg-brand-500 text-white px-4 py-2 rounded-full text-sm font-medium active:scale-95 transition-transform"
+          :class="{ 'opacity-50 cursor-default': cart.totalItems === 0 }"
+        >
+          <span>🛒</span>
+          <span class="hidden sm:inline">Cart</span>
+          <span
+            v-if="cart.totalItems > 0"
+            class="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold"
+          >
+            {{ cart.totalItems }}
+          </span>
+        </button>
+      </div>
     </div>
   </header>
 </template>

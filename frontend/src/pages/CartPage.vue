@@ -3,10 +3,12 @@ import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import AppHeader from '../components/AppHeader.vue'
 import { useCartStore } from '../stores/cart'
+import { useUserStore } from '../stores/user'
 import { placeOrder } from '../services/api'
 
 const router = useRouter()
 const cart = useCartStore()
+const user = useUserStore()
 
 const isPlacing = ref(false)
 const orderError = ref<string | null>(null)
@@ -22,6 +24,12 @@ const total = computed(() => cart.subtotal + deliveryFee.value)
 
 async function submitOrder() {
   if (cart.items.length === 0 || !cart.activeRestaurantId) return
+
+  // Guest users can build a cart but must sign in before the order actually goes out.
+  if (!user.isLoggedIn) {
+    router.push({ path: '/login', query: { redirect: '/cart' } })
+    return
+  }
 
   isPlacing.value = true
   orderError.value = null
@@ -140,6 +148,15 @@ async function submitOrder() {
           </div>
         </div>
 
+        <!-- Guest sign-in hint -->
+        <div
+          v-if="!user.isLoggedIn"
+          class="bg-brand-50 border border-brand-100 text-brand-700 text-sm rounded-xl px-4 py-3 mb-4 flex items-center gap-2"
+        >
+          <span>🔐</span>
+          <span>Sign in to place your order. You can keep browsing as a guest.</span>
+        </div>
+
         <!-- Error -->
         <div v-if="orderError" class="bg-red-50 border border-red-200 text-red-700 text-sm rounded-xl px-4 py-3 mb-4">
           ⚠️ {{ orderError }}
@@ -152,6 +169,7 @@ async function submitOrder() {
           class="w-full bg-brand-500 disabled:opacity-60 text-white rounded-2xl py-4 font-bold text-base shadow-lg active:scale-[0.97] transition-transform"
         >
           <span v-if="isPlacing">Placing order…</span>
+          <span v-else-if="!user.isLoggedIn">Sign in to place order · ฿{{ total }}</span>
           <span v-else>Place order · ฿{{ total }}</span>
         </button>
       </div>
