@@ -1,4 +1,6 @@
 import { Router, Request, Response, NextFunction } from "express";
+import { randomUUID } from "crypto";
+import sharp from "sharp";
 import { Restaurant } from "../models/Restaurant";
 import { MenuItem } from "../models/MenuItem";
 import { Order } from "../models/Order";
@@ -10,7 +12,7 @@ import {
   isPromptPayPayload,
   renderQrDataUrl,
 } from "../lib/promptPay";
-import { storage } from "../lib/storage";
+import { privateStorage, publicStorage } from "../lib/storage";
 import { imageUpload } from "../lib/upload";
 
 /**
@@ -528,7 +530,7 @@ router.get("/orders/:id/payment-proof", async (req: Request, res: Response) => {
       res.status(404).json({ error: "No payment proof on this order" });
       return;
     }
-    const signedUrl = await storage.getSignedUrl(
+    const signedUrl = await privateStorage.getSignedUrl(
       order.paymentProof.fileKey,
       SIGNED_URL_TTL_SECONDS,
     );
@@ -663,6 +665,91 @@ router.post(
     } catch (err) {
       console.error("[merchant] verify-payment failed:", err);
       res.status(500).json({ error: "Failed to verify payment" });
+    }
+  },
+);
+
+// ---------------------------------------------------------------------------
+// Public photo uploads — restaurant cover, restaurant logo, menu item photos.
+// Stored in R2 under a public-readable prefix so the proxy at `/api/images/...`
+// can stream them back. Returns the public URL the client should save to its
+// own form state (and ultimately to the Restaurant / MenuItem record).
+// ---------------------------------------------------------------------------
+
+type ImageUploadKind = "restaurant-cover" | "restaurant-logo" | "menu-item";
+
+interface KindConfig {
+  prefix: "restaurant-photos/" | "menu-photos/";
+  // Long-edge cap fed to sharp; smaller for logos.
+  maxEdge: number;
+  quality: number;
+}
+
+const UPLOAD_KIND_CONFIG: Record<ImageUploadKind, KindConfig> = {
+  "restaurant-cover": {
+    prefix: "restaurant-photos/",
+    maxEdge: 1600,
+    quality: 85,
+  },
+  "restaurant-logo": { prefix: "restaurant-photos/", maxEdge: 512, quality: 90 },
+  "menu-item": { prefix: "menu-photos/", maxEdge: 1200, quality: 85 },
+};
+
+function isImageUploadKind(v: unknown): v is ImageUploadKind {
+  return v === "restaurant-cover" || v === "restaurant-logo" || v === "menu-item";
+}
+
+// POST /api/merchant/uploads/image?kind=restaurant-cover|restaurant-logo|menu-item
+// multipart field name: "image"
+router.post(
+  "/uploads/image",
+  imageUpload.single("image"),
+  async (req: Request, res: Response) => {
+    try {
+      const restaurant = await getOwnedRestaurant(req.user!._id.toString());
+      if (!restaurant) {
+        res.status(404).json({ error: "No restaurant found for your account" });
+        return;
+      }
+      if (!req.file) {
+        res.status(400).json({ error: "image file is required" });
+        return;
+      }
+      const kind = req.query.kind;
+      if (!isImageUploadKind(kind)) {
+        res.status(400).json({
+          error:
+            "kind must be one of: restaurant-cover, restaurant-logo, menu-item",
+        });
+        return;
+      }
+
+      const { prefix, maxEdge, quality } = UPLOAD_KIND_CONFIG[kind];
+
+      // Re-encode through sharp: strips EXIF, normalises orientation, caps
+      // dimensions, and recompresses to JPEG so file sizes stay predictable.
+      const processed = await sharp(req.file.buffer)
+        .rotate()
+        .resize({
+          width: maxEdge,
+          height: maxEdge,
+          fit: "inside",
+          withoutEnlargement: true,
+        })
+        .jpeg({ quality, mozjpeg: true })
+        .toBuffer();
+
+      const fileKey = `${prefix}${restaurant._id}/${randomUUID()}.jpg`;
+      await publicStorage.put(fileKey, processed, "image/jpeg");
+
+      // Stable absolute URL the browser fetches directly from R2 (or the
+      // local-fs static handler in dev). Persisted into Restaurant.imageUrl
+      // / .logoUrl or MenuItem.imageUrl by the caller.
+      const imageUrl = publicStorage.publicUrl(fileKey);
+      res.json({ imageUrl, fileKey, sizeBytes: processed.length });
+    } catch (err) {
+      console.error("[merchant] uploads/image failed:", err);
+      res.status(500).json({ error: "Failed to upload image" });
     }
   },
 );

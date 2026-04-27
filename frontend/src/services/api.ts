@@ -513,6 +513,34 @@ export async function deleteMerchantPromptPayQr(): Promise<PromptPayQrConfig> {
   });
 }
 
+// --- Merchant: photo uploads (cover, logo, menu item) ---
+
+export type MerchantImageKind =
+  | "restaurant-cover"
+  | "restaurant-logo"
+  | "menu-item";
+
+export interface MerchantImageUploadResponse {
+  imageUrl: string;
+  fileKey: string;
+  sizeBytes: number;
+}
+
+/**
+ * Uploads a photo to R2 via the backend, which re-encodes via sharp and
+ * returns a same-origin URL (`/api/images/...`) the caller can persist into
+ * Restaurant.imageUrl / .logoUrl or MenuItem.imageUrl.
+ */
+export async function uploadMerchantImage(
+  file: File,
+  kind: MerchantImageKind,
+): Promise<MerchantImageUploadResponse> {
+  return uploadFile<MerchantImageUploadResponse>(
+    `/merchant/uploads/image?kind=${kind}`,
+    file,
+  );
+}
+
 // --- Merchant: payment-proof review ---
 
 export async function fetchMerchantPaymentProof(
