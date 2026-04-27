@@ -8,7 +8,7 @@ import { Payment } from '../models/Payment'
 import { requireUser, requireMerchant } from '../middleware/auth'
 import { getServiceDate } from '../lib/orderWindow'
 import { renderQrDataUrl } from '../lib/promptPay'
-import { privateStorage } from '../lib/storage'
+import { privateStorage, publicStorage } from '../lib/storage'
 import { imageUpload } from '../lib/upload'
 import { pushText } from '../lib/lineBot'
 
@@ -105,7 +105,9 @@ router.post(
           menuItemId: menuItem._id,
           name: menuItem.name,
           price: menuItem.price,
-          imageUrl: menuItem.imageUrl,
+          imageUrl: menuItem.imageKey
+            ? publicStorage.publicUrl(menuItem.imageKey)
+            : undefined,
           quantity: input.quantity,
           note: input.note ?? '',
         })

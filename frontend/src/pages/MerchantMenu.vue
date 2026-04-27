@@ -26,7 +26,8 @@ const form = reactive({
   name: '',
   description: '',
   price: 0,
-  imageUrl: '',
+  imageKey: '',
+  imageUrl: '',   // preview-only, not sent to the API
   category: '',
   isAvailable: true,
 })
@@ -67,7 +68,7 @@ async function loadCategories() {
 }
 
 function openAdd() {
-  Object.assign(form, { name: '', description: '', price: 0, imageUrl: '', category: '', isAvailable: true })
+  Object.assign(form, { name: '', description: '', price: 0, imageKey: '', imageUrl: '', category: '', isAvailable: true })
   editingMenuItem.value = null
   formError.value = null
   photoError.value = null
@@ -79,6 +80,7 @@ function openEdit(menuItem: MenuItem) {
     name: menuItem.name,
     description: menuItem.description,
     price: menuItem.price,
+    imageKey: menuItem.imageKey ?? '',
     imageUrl: menuItem.imageUrl ?? '',
     category: menuItem.category ?? '',
     isAvailable: menuItem.isAvailable ?? true,
@@ -100,7 +102,8 @@ async function onPhotoChosen(event: Event) {
   photoError.value = null
   photoUploading.value = true
   try {
-    const { imageUrl } = await uploadMerchantImage(file, 'menu-item')
+    const { imageUrl, fileKey } = await uploadMerchantImage(file, 'menu-item')
+    form.imageKey = fileKey
     form.imageUrl = imageUrl
   } catch (e) {
     photoError.value = e instanceof Error ? e.message : 'Failed to upload photo'
@@ -111,6 +114,7 @@ async function onPhotoChosen(event: Event) {
 }
 
 function removePhoto() {
+  form.imageKey = ''
   form.imageUrl = ''
   photoError.value = null
 }
@@ -124,9 +128,12 @@ async function saveForm() {
   formError.value = null
   try {
     const payload = {
-      ...form,
-      imageUrl: form.imageUrl || undefined,
+      name: form.name,
+      description: form.description,
+      price: form.price,
+      imageKey: form.imageKey || undefined,
       category: form.category || '',
+      isAvailable: form.isAvailable,
     }
     if (mode.value === 'add') {
       await createMerchantMenuItem(payload)

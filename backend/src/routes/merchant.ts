@@ -84,6 +84,18 @@ router.patch("/restaurant", async (req: Request, res: Response) => {
   }
 });
 
+/**
+ * Serializes a MenuItem document to a plain object, resolving `imageKey` into
+ * a `imageUrl` on the fly so consumers are not coupled to the storage base URL.
+ */
+function serializeMenuItem(item: InstanceType<typeof MenuItem>) {
+  const obj = item.toObject() as unknown as Record<string, unknown>;
+  obj.imageUrl = obj.imageKey
+    ? publicStorage.publicUrl(obj.imageKey as string)
+    : undefined;
+  return obj;
+}
+
 // GET /api/merchant/menu-items
 router.get("/menu-items", async (req: Request, res: Response) => {
   try {
@@ -95,7 +107,7 @@ router.get("/menu-items", async (req: Request, res: Response) => {
     const menuItems = await MenuItem.find({
       restaurantId: restaurant._id,
     }).sort({ category: 1, createdAt: 1 });
-    res.json(menuItems);
+    res.json(menuItems.map(serializeMenuItem));
   } catch (err) {
     res.status(500).json({ error: "Failed to fetch menu items" });
   }
@@ -110,7 +122,7 @@ router.post("/menu-items", async (req: Request, res: Response) => {
       return;
     }
 
-    const { name, description, price, imageUrl, category, tags } = req.body;
+    const { name, description, price, imageKey, category, tags } = req.body;
     if (!name || !description || price === undefined) {
       res
         .status(400)
@@ -131,12 +143,12 @@ router.post("/menu-items", async (req: Request, res: Response) => {
       name,
       description,
       price,
-      imageUrl,
+      imageKey,
       category: cleanCategory,
       tags: tags ?? [],
       isAvailable: true,
     });
-    res.status(201).json(menuItem);
+    res.status(201).json(serializeMenuItem(menuItem));
   } catch (err) {
     res.status(500).json({ error: "Failed to create menu item" });
   }
@@ -164,7 +176,7 @@ router.patch("/menu-items/:menuItemId", async (req: Request, res: Response) => {
       "name",
       "description",
       "price",
-      "imageUrl",
+      "imageKey",
       "category",
       "tags",
       "isAvailable",
@@ -189,7 +201,7 @@ router.patch("/menu-items/:menuItemId", async (req: Request, res: Response) => {
     }
 
     await menuItem.save();
-    res.json(menuItem);
+    res.json(serializeMenuItem(menuItem));
   } catch (err) {
     res.status(500).json({ error: "Failed to update menu item" });
   }
@@ -743,8 +755,9 @@ router.post(
       await publicStorage.put(fileKey, processed, "image/jpeg");
 
       // Stable absolute URL the browser fetches directly from R2 (or the
-      // local-fs static handler in dev). Persisted into Restaurant.imageUrl
-      // / .logoUrl or MenuItem.imageUrl by the caller.
+      // local-fs static handler in dev). For Restaurant.imageUrl / .logoUrl the
+      // caller persists this URL directly. For MenuItem the caller persists only
+      // `fileKey` (as `imageKey`) and the server reconstructs the URL on read.
       const imageUrl = publicStorage.publicUrl(fileKey);
       res.json({ imageUrl, fileKey, sizeBytes: processed.length });
     } catch (err) {

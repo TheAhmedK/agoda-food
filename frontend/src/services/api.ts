@@ -94,6 +94,7 @@ function toMenuItem(d: Record<string, unknown>): MenuItem {
     name: d.name as string,
     description: d.description as string,
     price: d.price as number,
+    imageKey: d.imageKey as string | undefined,
     imageUrl: d.imageUrl as string | undefined,
     category: rawCategory || undefined,
     tags,
