@@ -18,6 +18,7 @@ const STATUS_LABELS: Record<string, string> = {
   pending: 'Pending',
   confirmed: 'Confirmed',
   preparing: 'Preparing',
+  in_delivery: 'In Delivery',
   delivered: 'Delivered',
   cancelled: 'Cancelled',
 }
@@ -28,6 +29,7 @@ const STATUS_COLORS: Record<string, string> = {
   pending: 'bg-blue-100 text-blue-700',
   confirmed: 'bg-brand-100 text-brand-700',
   preparing: 'bg-purple-100 text-purple-700',
+  in_delivery: 'bg-sky-100 text-sky-700',
   delivered: 'bg-green-100 text-green-700',
   cancelled: 'bg-red-100 text-red-600',
 }
@@ -46,8 +48,17 @@ const PAYMENT_COLORS: Record<string, string> = {
 
 const NEXT_STATUS: Record<string, string> = {
   confirmed: 'preparing',
-  preparing: 'delivered',
+  preparing: 'in_delivery',
+  in_delivery: 'delivered',
 }
+
+const ADVANCE_LABELS: Record<string, string> = {
+  confirmed: 'Start preparing',
+  preparing: 'Out for delivery',
+  in_delivery: 'Mark delivered',
+}
+
+const PRINT_STAGES = new Set(['confirmed', 'preparing', 'in_delivery', 'delivered'])
 
 function customerInitials(name: string): string {
   return name
@@ -136,6 +147,7 @@ function customerInitials(name: string): string {
       <span class="font-bold text-gray-900 shrink-0">฿{{ order.total }}</span>
 
       <div class="flex gap-2 flex-wrap justify-end">
+        <!-- Stage 1 action: verify payment -->
         <button
           v-if="order.status === 'pending_verification'"
           @click="$emit('review', order)"
@@ -144,31 +156,24 @@ function customerInitials(name: string): string {
           Review payment
         </button>
 
-        <template v-else-if="order.status === 'preparing'">
-          <button
-            @click="$emit('print', order)"
-            class="border border-gray-200 hover:bg-gray-50 text-gray-700 px-3 py-1.5 rounded-xl text-xs font-semibold inline-flex items-center gap-1"
-          >
-            <span aria-hidden="true">🖨</span>
-            <span>Print receipt</span>
-          </button>
-          <button
-            @click="$emit('advance', order)"
-            :disabled="updatingId === order.id"
-            class="bg-brand-500 disabled:opacity-60 text-white px-4 py-1.5 rounded-xl text-xs font-semibold"
-          >
-            {{ updatingId === order.id ? 'Updating…' : 'Mark delivered' }}
-          </button>
-        </template>
-
+        <!-- Stage 2–5: print receipt always visible -->
         <button
-          v-else-if="NEXT_STATUS[order.status]"
+          v-if="PRINT_STAGES.has(order.status)"
+          @click="$emit('print', order)"
+          class="border border-gray-200 hover:bg-gray-50 text-gray-700 px-3 py-1.5 rounded-xl text-xs font-semibold inline-flex items-center gap-1"
+        >
+          <span aria-hidden="true">🖨</span>
+          <span>Print receipt</span>
+        </button>
+
+        <!-- Advance to next stage -->
+        <button
+          v-if="NEXT_STATUS[order.status]"
           @click="$emit('advance', order)"
           :disabled="updatingId === order.id"
           class="bg-brand-500 disabled:opacity-60 text-white px-4 py-1.5 rounded-xl text-xs font-semibold"
         >
-          <span v-if="updatingId === order.id">Updating…</span>
-          <span v-else-if="order.status === 'confirmed'">Start preparing</span>
+          {{ updatingId === order.id ? 'Updating…' : ADVANCE_LABELS[order.status] }}
         </button>
       </div>
     </div>

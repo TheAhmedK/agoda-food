@@ -6,6 +6,7 @@ export type OrderStatus =
   | "pending" // Legacy / generic pending — kept for backward compat
   | "confirmed" // Merchant has confirmed payment
   | "preparing"
+  | "in_delivery"
   | "delivered"
   | "cancelled";
 
@@ -114,6 +115,7 @@ const OrderSchema = new Schema<IOrder>(
         "pending",
         "confirmed",
         "preparing",
+        "in_delivery",
         "delivered",
         "cancelled",
       ],

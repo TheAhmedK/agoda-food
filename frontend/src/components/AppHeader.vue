@@ -106,7 +106,11 @@ onBeforeUnmount(() => document.removeEventListener('click', handleDocClick))
             <button v-else @click="go('/restaurants/apply')" class="w-full text-left px-4 py-2 hover:bg-gray-50 text-gray-600">
               Open a restaurant
             </button>
+            <!-- LINE in-app webview can't actually sign out — the user's
+                 identity is the LINE app itself, and our boot() auto-relogins
+                 on the next reload. Hide the button there to avoid confusion. -->
             <button
+              v-if="!isInLineClient()"
               @click="logout"
               class="w-full text-left px-4 py-2 hover:bg-gray-50 text-red-600 border-t border-gray-100"
             >

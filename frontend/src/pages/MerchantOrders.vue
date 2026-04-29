@@ -14,6 +14,7 @@ import {
   fetchMerchantRestaurant,
   updateMerchantRestaurant,
 } from '../services/api'
+import { isInLineClient } from '../lib/liff'
 import type { Order, PaymentProofView, Restaurant } from '../data/types'
 
 const orders = ref<Order[]>([])
@@ -111,7 +112,8 @@ function onDateChange() {
 
 const NEXT_STATUS: Record<string, string> = {
   confirmed: 'preparing',
-  preparing: 'delivered',
+  preparing: 'in_delivery',
+  in_delivery: 'delivered',
 }
 
 // Used by the review-payment modal customer line. The card-level lookups
@@ -137,6 +139,13 @@ const updatingOrder = ref<string | null>(null)
 const printingOrder = ref<Order | null>(null)
 
 async function printOrder(order: Order) {
+  // The LINE in-app webview doesn't expose a print dialog on iOS or Android,
+  // so window.print() silently no-ops. Surface a clear message instead of
+  // letting the merchant tap a dead button.
+  if (isInLineClient()) {
+    flashActionError('Printing isn\'t supported in the LINE app. Please open this dashboard on a laptop or desktop browser to print receipts.')
+    return
+  }
   printingOrder.value = order
   await nextTick()
   window.print()
@@ -213,7 +222,7 @@ const activeOrders = computed(() => {
 // Stat counters
 const awaitingCount = computed(() => awaitingOrders.value.length)
 const confirmedCount = computed(
-  () => orders.value.filter((o) => o.status === 'confirmed' || o.status === 'preparing').length,
+  () => orders.value.filter((o) => ['confirmed', 'preparing', 'in_delivery'].includes(o.status)).length,
 )
 const deliveredCount = computed(() => orders.value.filter((o) => o.status === 'delivered').length)
 

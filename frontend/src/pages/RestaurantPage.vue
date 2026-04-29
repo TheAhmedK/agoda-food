@@ -179,7 +179,10 @@ const { isOpen: windowIsOpen, label: windowLabel, deliveryTimeLabel } = useOrder
     </div>
 
     <!-- Menu -->
-    <div class="max-w-2xl mx-auto px-4 py-6 space-y-8">
+    <div
+      class="max-w-2xl mx-auto px-4 py-6 space-y-8"
+      :class="{ 'pb-28': cart.totalItems > 0 && cart.activeRestaurantId === restaurant.id }"
+    >
       <section v-for="category in categories" :key="category">
         <h2 class="font-bold text-gray-900 text-base mb-3 flex items-center gap-2">
           <span class="w-1 h-5 bg-brand-500 rounded-full inline-block"></span>

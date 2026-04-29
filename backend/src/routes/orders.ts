@@ -364,7 +364,7 @@ router.post('/:id/cancel', requireUser, async (req: Request, res: Response) => {
 // PATCH /api/orders/:id/status — merchant-only, must own the restaurant
 router.patch('/:id/status', requireMerchant, async (req: Request, res: Response) => {
   const { status } = req.body as { status?: string }
-  const allowed = ['confirmed', 'preparing', 'delivered', 'cancelled'] as const
+  const allowed = ['confirmed', 'preparing', 'in_delivery', 'delivered', 'cancelled'] as const
   type AllowedStatus = (typeof allowed)[number]
 
   if (!status || !allowed.includes(status as AllowedStatus)) {
@@ -387,6 +387,16 @@ router.patch('/:id/status', requireMerchant, async (req: Request, res: Response)
 
     order.status = status as AllowedStatus
     await order.save()
+
+    if (status === 'in_delivery') {
+      const customer = await import('../models/User').then((m) => m.User.findById(order.userId))
+      if (customer?.lineUserId) {
+        await pushText(
+          customer.lineUserId,
+          `🛵 Your order from ${order.restaurantName} is on its way! It'll be at reception shortly.`,
+        )
+      }
+    }
 
     if (status === 'delivered') {
       const customer = await import('../models/User').then((m) => m.User.findById(order.userId))
