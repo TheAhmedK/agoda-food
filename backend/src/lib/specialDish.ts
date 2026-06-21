@@ -50,7 +50,7 @@ export function isSpecialDishDeliveryPast(
   availability: SpecialDishAvailability,
   now: Date = new Date(),
 ): boolean {
-  return availability.deliveryDate <= bangkokDateStr(now)
+  return availability.deliveryDate < bangkokDateStr(now)
 }
 
 export function isSpecialDishOrderable(
