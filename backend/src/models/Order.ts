@@ -50,6 +50,7 @@ export interface IOrder extends Document {
   paymentStatus: PaymentStatus;
   paymentProof?: IPaymentProof;
   serviceDate?: Date;
+  batchId?: Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -128,11 +129,13 @@ const OrderSchema = new Schema<IOrder>(
     },
     paymentProof: { type: PaymentProofSchema },
     serviceDate: { type: Date },
+    batchId: { type: Schema.Types.ObjectId, ref: 'Batch', index: true },
   },
   { timestamps: true },
 );
 
 OrderSchema.index({ userId: 1, createdAt: -1 });
+OrderSchema.index({ batchId: 1 });
 OrderSchema.index({ restaurantId: 1, serviceDate: 1, status: 1 });
 OrderSchema.index({ createdAt: -1 });
 

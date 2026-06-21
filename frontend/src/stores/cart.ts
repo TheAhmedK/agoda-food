@@ -1,8 +1,9 @@
 import { defineStore } from 'pinia'
 import { ref, computed, watch } from 'vue'
 import type { CartItem, MenuItem } from '../data/types'
+import { lineTotal } from '../lib/serviceDates'
 
-const STORAGE_KEY = 'agoda_food_cart_v1'
+const STORAGE_KEY = 'agoda_food_cart_v2'
 
 function loadFromStorage(): CartItem[] {
   if (typeof localStorage === 'undefined') return []
@@ -10,7 +11,11 @@ function loadFromStorage(): CartItem[] {
     const raw = localStorage.getItem(STORAGE_KEY)
     if (!raw) return []
     const parsed = JSON.parse(raw)
-    return Array.isArray(parsed) ? (parsed as CartItem[]) : []
+    if (!Array.isArray(parsed)) return []
+    return (parsed as CartItem[]).map((item) => ({
+      ...item,
+      serviceDates: Array.isArray(item.serviceDates) ? item.serviceDates : [],
+    }))
   } catch {
     return []
   }
@@ -25,7 +30,7 @@ function saveToStorage(items: CartItem[]): void {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(items))
     }
   } catch {
-    // Quota / privacy mode — non-fatal
+    /* noop */
   }
 }
 
@@ -39,18 +44,30 @@ export const useCartStore = defineStore('cart', () => {
   )
 
   const totalItems = computed(() =>
-    items.value.reduce((sum, item) => sum + item.quantity, 0)
+    items.value.reduce(
+      (sum, item) => sum + item.quantity * item.serviceDates.length,
+      0,
+    ),
   )
 
   const subtotal = computed(() =>
-    items.value.reduce((sum, item) => sum + item.menuItem.price * item.quantity, 0)
+    items.value.reduce(
+      (sum, item) =>
+        sum + lineTotal(item.menuItem.price, item.quantity, item.serviceDates.length),
+      0,
+    ),
   )
 
   const activeRestaurantId = computed(() =>
-    items.value.length > 0 ? items.value[0]!.restaurantId : null
+    items.value.length > 0 ? items.value[0]!.restaurantId : null,
   )
 
-  function addItem(menuItem: MenuItem, restaurantId: string, restaurantName: string) {
+  function addItem(
+    menuItem: MenuItem,
+    restaurantId: string,
+    restaurantName: string,
+    defaultServiceDate: string,
+  ) {
     if (activeRestaurantId.value && activeRestaurantId.value !== restaurantId) {
       items.value = []
     }
@@ -58,8 +75,19 @@ export const useCartStore = defineStore('cart', () => {
     const existing = items.value.find((i) => i.menuItem.id === menuItem.id)
     if (existing) {
       existing.quantity += 1
+      if (!existing.serviceDates.includes(defaultServiceDate)) {
+        existing.serviceDates.push(defaultServiceDate)
+        existing.serviceDates.sort()
+      }
     } else {
-      items.value.push({ menuItem, restaurantId, restaurantName, quantity: 1, note: '' })
+      items.value.push({
+        menuItem,
+        restaurantId,
+        restaurantName,
+        quantity: 1,
+        note: '',
+        serviceDates: [defaultServiceDate],
+      })
     }
   }
 
@@ -77,6 +105,20 @@ export const useCartStore = defineStore('cart', () => {
   function setNote(menuItemId: string, note: string) {
     const item = items.value.find((i) => i.menuItem.id === menuItemId)
     if (item) item.note = note
+  }
+
+  function toggleServiceDate(menuItemId: string, dateStr: string) {
+    const item = items.value.find((i) => i.menuItem.id === menuItemId)
+    if (!item) return
+
+    const idx = item.serviceDates.indexOf(dateStr)
+    if (idx >= 0) {
+      if (item.serviceDates.length <= 1) return
+      item.serviceDates.splice(idx, 1)
+    } else {
+      item.serviceDates.push(dateStr)
+      item.serviceDates.sort()
+    }
   }
 
   function clearCart() {
@@ -103,6 +145,7 @@ export const useCartStore = defineStore('cart', () => {
     addItem,
     removeItem,
     setNote,
+    toggleServiceDate,
     clearCart,
     setItems,
     getQuantity,

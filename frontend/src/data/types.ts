@@ -37,6 +37,8 @@ export interface Restaurant {
   status?: 'draft' | 'active' | 'suspended'
   ownerUserId: string
   orderWindow?: OrderWindow
+  /** Weekdays served. 0=Sun … 6=Sat */
+  servingDays?: number[]
   referral?: { name: string; email: string; verifiedAt?: string }
   /** Whether the merchant has uploaded a PromptPay QR (presence-only flag for UIs). */
   hasPromptPay?: boolean
@@ -52,6 +54,7 @@ export interface CartItem {
   restaurantName: string
   quantity: number
   note: string
+  serviceDates: string[]
 }
 
 export interface OrderItem {
@@ -106,6 +109,21 @@ export interface PromptPayQR {
   paymentStatus: PaymentStatus
   proofStatus?: PaymentProofStatus
   proofUploadedAt?: string
+  batchId?: string
+  grandTotal?: number
+  orderIds?: string[]
+}
+
+export interface OrderBatch {
+  id: string
+  userId: string
+  restaurantId: string
+  orderIds: string[]
+  grandTotal: number
+  status: OrderStatus
+  paymentProof?: PaymentProof
+  orders: Order[]
+  createdAt: string
 }
 
 export interface PaymentProof {
@@ -149,6 +167,7 @@ export interface Order {
   paymentStatus?: PaymentStatus
   paymentProof?: PaymentProof
   serviceDate?: string
+  batchId?: string
   createdAt: string
   customer?: OrderCustomer
 }

@@ -1,9 +1,107 @@
 const TZ = 'Asia/Bangkok'
 
+/** Mon–Fri when a restaurant has no explicit schedule. 0 = Sun … 6 = Sat. */
+export const DEFAULT_SERVING_DAYS = [1, 2, 3, 4, 5]
+
+export const SERVICE_DATE_RE = /^\d{4}-\d{2}-\d{2}$/
+
 export interface OrderWindowConfig {
   openHour: number   // hour ordering becomes available (0-23)
   closeHour: number  // hour ordering closes (0-23)
   deliveryHour: number // hour food is delivered (0-23)
+}
+
+export function isValidServiceDateStr(s: string): boolean {
+  if (!SERVICE_DATE_RE.test(s)) return false
+  const [y, m, d] = s.split('-').map(Number)
+  const dt = new Date(Date.UTC(y, m - 1, d))
+  return (
+    dt.getUTCFullYear() === y &&
+    dt.getUTCMonth() === m - 1 &&
+    dt.getUTCDate() === d
+  )
+}
+
+export function bangkokDateStr(now: Date = new Date()): string {
+  return new Intl.DateTimeFormat('en-CA', { timeZone: TZ }).format(now)
+}
+
+export function bangkokWeekday(dateStr: string): number {
+  const d = new Date(`${dateStr}T12:00:00+07:00`)
+  const wd = new Intl.DateTimeFormat('en-US', { timeZone: TZ, weekday: 'short' }).format(d)
+  const map: Record<string, number> = {
+    Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6,
+  }
+  return map[wd] ?? 0
+}
+
+export function addDaysToDateStr(dateStr: string, days: number): string {
+  const [y, m, d] = dateStr.split('-').map(Number)
+  const dt = new Date(Date.UTC(y, m - 1, d + days))
+  const yy = dt.getUTCFullYear()
+  const mm = String(dt.getUTCMonth() + 1).padStart(2, '0')
+  const dd = String(dt.getUTCDate()).padStart(2, '0')
+  return `${yy}-${mm}-${dd}`
+}
+
+export function serviceDateToDate(dateStr: string, deliveryHour: number): Date {
+  const hh = String(deliveryHour).padStart(2, '0')
+  return new Date(`${dateStr}T${hh}:00:00+07:00`)
+}
+
+export function isServingDay(servingDays: number[], dateStr: string): boolean {
+  const days = servingDays.length > 0 ? servingDays : DEFAULT_SERVING_DAYS
+  return days.includes(bangkokWeekday(dateStr))
+}
+
+/**
+ * For a fixed delivery day, ordering opens the previous calendar day at
+ * `openHour` and closes on the delivery day at `closeHour` (Bangkok time).
+ * Matches the overnight window used by getServiceDate().
+ */
+export function isOrderableForDate(
+  window: OrderWindowConfig,
+  serviceDateStr: string,
+  now: Date = new Date(),
+): boolean {
+  if (!isValidServiceDateStr(serviceDateStr)) return false
+  const [y, m, d] = serviceDateStr.split('-').map(Number)
+  const prev = addDaysToDateStr(serviceDateStr, -1)
+  const [py, pm, pd] = prev.split('-').map(Number)
+  const openAt = new Date(
+    `${py}-${String(pm).padStart(2, '0')}-${String(pd).padStart(2, '0')}T${String(window.openHour).padStart(2, '0')}:00:00+07:00`,
+  )
+  const closeAt = new Date(
+    `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}T${String(window.closeHour).padStart(2, '0')}:00:00+07:00`,
+  )
+  return now >= openAt && now < closeAt
+}
+
+/** Upcoming YYYY-MM-DD strings the customer can order for. */
+export function listEligibleServiceDates(
+  servingDays: number[],
+  window: OrderWindowConfig,
+  horizonDays = 14,
+  now: Date = new Date(),
+): string[] {
+  const today = bangkokDateStr(now)
+  const out: string[] = []
+  for (let i = 0; i < horizonDays; i++) {
+    const dateStr = addDaysToDateStr(today, i)
+    if (isServingDay(servingDays, dateStr) && isOrderableForDate(window, dateStr, now)) {
+      out.push(dateStr)
+    }
+  }
+  return out
+}
+
+export function defaultSelectedServiceDate(
+  servingDays: number[],
+  window: OrderWindowConfig,
+  now: Date = new Date(),
+): string | null {
+  const eligible = listEligibleServiceDates(servingDays, window, 14, now)
+  return eligible[0] ?? null
 }
 
 function getBangkokParts(date: Date): { hour: number; year: number; month: number; day: number } {

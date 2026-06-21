@@ -5,10 +5,15 @@ import { requireUser } from '@middleware/auth'
 import { generateOtp, verifyOtp } from '@lib/otp'
 import { getPublicStorage } from '@lib/storage'
 import { config } from '@config/AppConfig'
+import {
+  isValidServiceDateStr,
+  isServingDay,
+} from '@lib/orderWindow'
 
 const router = Router()
 
 // GET /api/restaurants — list (active only unless the caller owns one)
+// Optional ?serviceDate=YYYY-MM-DD filters to restaurants serving that weekday.
 router.get('/', async (req: Request, res: Response) => {
   try {
     const authHeader = req.header('Authorization') ?? ''
@@ -22,12 +27,24 @@ router.get('/', async (req: Request, res: Response) => {
       }
     }
 
+    const serviceDate =
+      typeof req.query.serviceDate === 'string' ? req.query.serviceDate : undefined
+    if (serviceDate && !isValidServiceDateStr(serviceDate)) {
+      res.status(400).json({ error: 'serviceDate must be YYYY-MM-DD' })
+      return
+    }
+
     // Build filter: public sees status=active only
     const filter = callerId
       ? { $or: [{ status: 'active' }, { ownerUserId: callerId }] }
       : { status: 'active' }
 
-    const restaurants = await Restaurant.find(filter).sort({ createdAt: 1 })
+    let restaurants = await Restaurant.find(filter).sort({ createdAt: 1 })
+
+    if (serviceDate) {
+      restaurants = restaurants.filter((r) => isServingDay(r.servingDays, serviceDate))
+    }
+
     res.json(restaurants)
   } catch (err) {
     res.status(500).json({ error: 'Failed to fetch restaurants' })
@@ -235,6 +252,7 @@ router.post(
           verifiedAt: new Date(),
         },
         orderWindow: { openHour: 17, closeHour: 10, deliveryHour: 12 },
+        servingDays: [1, 2, 3, 4, 5],
       })
 
       const user = req.user!

@@ -57,6 +57,7 @@ const seedData: SeedRestaurant[] = [
     isOpen: true,
     status: 'active',
     orderWindow: { openHour: 17, closeHour: 10, deliveryHour: 12 },
+    servingDays: [1, 2, 3, 4, 5],
     menuItems: [
       {
         name: 'Som Tum Thai',
@@ -114,6 +115,7 @@ const seedData: SeedRestaurant[] = [
     isOpen: true,
     status: 'active',
     orderWindow: { openHour: 17, closeHour: 10, deliveryHour: 12 },
+    servingDays: [1, 2, 3, 4, 5],
     menuItems: [
       {
         name: 'MK Sukiyaki Set (2 pax)',
@@ -162,6 +164,7 @@ const seedData: SeedRestaurant[] = [
     isOpen: true,
     status: 'active',
     orderWindow: { openHour: 17, closeHour: 10, deliveryHour: 12 },
+    servingDays: [1, 2, 3, 4, 5],
     menuItems: [
       {
         name: 'Crab Omelette (Kai Jeaw Poo)',
@@ -210,6 +213,7 @@ const seedData: SeedRestaurant[] = [
     isOpen: false,
     status: 'active',
     orderWindow: { openHour: 17, closeHour: 10, deliveryHour: 12 },
+    servingDays: [1, 2, 3, 4, 5],
     menuItems: [
       {
         name: 'Pepperoni Classic',

@@ -29,6 +29,8 @@ export interface IRestaurant extends Document {
   isOpen: boolean
   ownerUserId: Types.ObjectId
   orderWindow: IOrderWindow
+  /** Weekdays this restaurant serves lunch. 0=Sun … 6=Sat. Default Mon–Fri. */
+  servingDays: number[]
   referral?: IReferral
   status: RestaurantStatus
   /**
@@ -75,6 +77,17 @@ const RestaurantSchema = new Schema<IRestaurant>(
     isOpen: { type: Boolean, required: true, default: true },
     ownerUserId: { type: Schema.Types.ObjectId, ref: 'User', required: true, index: true },
     orderWindow: { type: OrderWindowSchema, default: () => ({}) },
+    servingDays: {
+      type: [Number],
+      default: () => [1, 2, 3, 4, 5],
+      validate: {
+        validator: (v: number[]) =>
+          Array.isArray(v) &&
+          v.length > 0 &&
+          v.every((d) => Number.isInteger(d) && d >= 0 && d <= 6),
+        message: 'servingDays must be weekday numbers 0–6',
+      },
+    },
     referral: { type: ReferralSchema },
     status: {
       type: String,

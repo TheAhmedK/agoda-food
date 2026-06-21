@@ -14,6 +14,16 @@ import {
 import type { Restaurant } from '../data/types'
 import type { MerchantImageKind } from '../services/api'
 
+const WEEKDAY_OPTIONS = [
+  { value: 1, label: 'Mon' },
+  { value: 2, label: 'Tue' },
+  { value: 3, label: 'Wed' },
+  { value: 4, label: 'Thu' },
+  { value: 5, label: 'Fri' },
+  { value: 6, label: 'Sat' },
+  { value: 0, label: 'Sun' },
+]
+
 const restaurant = ref<Restaurant | null>(null)
 const loading = ref(true)
 const saving = ref(false)
@@ -30,6 +40,7 @@ const form = reactive({
   openHour: 17,
   closeHour: 10,
   deliveryHour: 12,
+  servingDays: [1, 2, 3, 4, 5] as number[],
 })
 
 // --- PromptPay QR onboarding ---
@@ -63,6 +74,7 @@ onMounted(async () => {
     form.openHour = r.orderWindow?.openHour ?? 17
     form.closeHour = r.orderWindow?.closeHour ?? 10
     form.deliveryHour = r.orderWindow?.deliveryHour ?? 12
+    form.servingDays = r.servingDays?.length ? [...r.servingDays] : [1, 2, 3, 4, 5]
 
     const qr = await fetchMerchantPromptPayQr()
     qrConfigured.value = qr.configured
@@ -168,6 +180,10 @@ async function confirmRemoveQr() {
 }
 
 async function save() {
+  if (form.servingDays.length === 0) {
+    saveError.value = 'Select at least one serving day'
+    return
+  }
   saving.value = true
   saveError.value = null
   saved.value = false
@@ -183,6 +199,7 @@ async function save() {
         closeHour: form.closeHour,
         deliveryHour: form.deliveryHour,
       },
+      servingDays: [...form.servingDays].sort((a, b) => a - b),
     } as Partial<Restaurant>)
     restaurant.value = updated
     saved.value = true
@@ -191,6 +208,20 @@ async function save() {
     saveError.value = e instanceof Error ? e.message : 'Failed to save'
   } finally {
     saving.value = false
+  }
+}
+
+function toggleServingDay(day: number) {
+  const idx = form.servingDays.indexOf(day)
+  if (idx >= 0) {
+    if (form.servingDays.length <= 1) return
+    form.servingDays.splice(idx, 1)
+  } else {
+    form.servingDays.push(day)
+    form.servingDays.sort((a, b) => {
+      const order = [1, 2, 3, 4, 5, 6, 0]
+      return order.indexOf(a) - order.indexOf(b)
+    })
   }
 }
 </script>
@@ -252,6 +283,27 @@ async function save() {
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-1.5">Min order (฿)</label>
               <input v-model.number="form.minOrder" type="number" min="0" class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-300" />
+            </div>
+          </div>
+
+          <div class="border-t border-gray-100 pt-4">
+            <h3 class="font-semibold text-gray-800 mb-1 text-sm">Serving days</h3>
+            <p class="text-xs text-gray-400 mb-3">Which weekdays you serve office lunch.</p>
+            <div class="flex flex-wrap gap-2">
+              <button
+                v-for="opt in WEEKDAY_OPTIONS"
+                :key="opt.value"
+                type="button"
+                @click="toggleServingDay(opt.value)"
+                class="text-sm font-medium px-3 py-1.5 rounded-full border transition-colors"
+                :class="
+                  form.servingDays.includes(opt.value)
+                    ? 'bg-brand-500 text-white border-brand-500'
+                    : 'bg-white text-gray-600 border-gray-200'
+                "
+              >
+                {{ opt.label }}
+              </button>
             </div>
           </div>
 

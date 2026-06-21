@@ -2,10 +2,12 @@ import { Order, type IOrder } from '@models/Order'
 import { Restaurant } from '@models/Restaurant'
 import { User } from '@models/User'
 import { Payment } from '@models/Payment'
+import type { IBatch } from '@models/Batch'
 import { getPrivateStorage } from '@lib/storage'
 import { pushFlex, replyText } from '@lib/lineBot'
 import { buildOrderDetailsBubble, type OrderActionButton } from '@lib/lineFlexBuilders'
 import { buildMerchantOrderLiffUrl } from '@lib/lineLiff'
+import { confirmBatchPayment, findBatchByOrderId } from '@lib/batchPayment'
 
 const SIGNED_URL_TTL_SECONDS = 24 * 60 * 60 // 24h — long enough for a merchant to react
 const PROOF_FILE_RETENTION_MS = 30 * 24 * 60 * 60 * 1000
@@ -74,6 +76,76 @@ export async function pushPaymentProofToMerchant(order: IOrder): Promise<void> {
   )
 }
 
+export async function pushPaymentProofToMerchantForBatch(
+  batch: IBatch,
+  orders: IOrder[],
+): Promise<void> {
+  if (!batch.paymentProof?.fileKey || orders.length === 0) return
+
+  const restaurant = await Restaurant.findById(batch.restaurantId).lean()
+  if (!restaurant) return
+
+  const owner = await User.findById(restaurant.ownerUserId).select('lineUserId').lean()
+  if (!owner?.lineUserId) return
+
+  const signedUrl = await getPrivateStorage().getSignedUrl(
+    batch.paymentProof.fileKey,
+    SIGNED_URL_TTL_SECONDS,
+  )
+
+  const leadOrder = orders[0]!
+  const orderId = (leadOrder._id as { toString(): string }).toString()
+  const orderShortId = orderId.slice(-6).toUpperCase()
+  const dayCount = orders.length
+
+  const actions: OrderActionButton[] = [
+    {
+      kind: 'uri',
+      label: 'Reject',
+      style: 'secondary',
+      uri: buildMerchantOrderLiffUrl(orderId),
+    },
+    {
+      kind: 'postback',
+      label: 'Approve',
+      style: 'primary',
+      color: '#16a34a',
+      data: JSON.stringify({ action: 'APPROVE_PAYMENT', orderId }),
+      displayText: 'Approving payment…',
+    },
+  ]
+
+  const bubble = buildOrderDetailsBubble({
+    orderShortId,
+    status: leadOrder.status,
+    items: orders.flatMap((o) =>
+      o.items.map((i) => ({
+        name: `${i.name} (${formatServiceDay(o.serviceDate)})`,
+        quantity: i.quantity,
+        price: i.price,
+        note: i.note,
+      })),
+    ),
+    total: batch.grandTotal,
+    imageUrl: signedUrl,
+    actions,
+  })
+
+  await pushFlex(
+    owner.lineUserId,
+    `Batch #${orderShortId} — ${dayCount} lunch${dayCount > 1 ? 'es' : ''} awaiting approval`,
+    bubble,
+  )
+}
+
+function formatServiceDay(d?: Date): string {
+  if (!d) return 'day'
+  return d.toLocaleDateString('en-GB', {
+    timeZone: 'Asia/Bangkok',
+    weekday: 'short',
+  })
+}
+
 // ─── Approve payment (postback handler) ──────────────────────────────────────
 
 /**
@@ -121,6 +193,20 @@ export async function handleApprovePayment({
 
   if (!order.paymentProof) {
     await replyText(replyToken, 'No payment proof on this order.')
+    return
+  }
+
+  const batch = await findBatchByOrderId(order._id as import('mongoose').Types.ObjectId)
+  if (batch && batch.status === 'pending_verification') {
+    await confirmBatchPayment(batch, new Date())
+    const orderShortId = orderId.slice(-6).toUpperCase()
+    const dayCount = batch.orderIds.length
+    await replyText(
+      replyToken,
+      dayCount > 1
+        ? `Payment approved for batch #${orderShortId} (${dayCount} lunches).`
+        : `Payment approved for Order #${orderShortId}.`,
+    )
     return
   }
 

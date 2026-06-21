@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { MenuItem, MenuItemTag } from '../data/types'
 import { useCartStore } from '../stores/cart'
+import { useSelectedDayStore } from '../stores/selectedDay'
 
 const props = defineProps<{
   menuItem: MenuItem
@@ -13,9 +14,8 @@ const emit = defineEmits<{
 }>()
 
 const cart = useCartStore()
+const selectedDay = useSelectedDayStore()
 
-// If the cart already has items from a different restaurant, defer to the
-// parent so it can show a confirmation modal. Otherwise, add directly.
 function tryAdd() {
   if (cart.wouldClearCartFor(props.restaurantId)) {
     emit('request-switch-restaurant', {
@@ -25,7 +25,12 @@ function tryAdd() {
     })
     return
   }
-  cart.addItem(props.menuItem, props.restaurantId, props.restaurantName)
+  cart.addItem(
+    props.menuItem,
+    props.restaurantId,
+    props.restaurantName,
+    selectedDay.serviceDate,
+  )
 }
 
 const TAG_STYLES: Record<MenuItemTag, { label: string; classes: string }> = {

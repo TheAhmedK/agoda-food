@@ -35,13 +35,19 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
     const err = new Error(
-      body.error ?? `Request failed: ${res.status}`,
+      (body.error as string | undefined) ??
+        (Array.isArray(body.errors) && body.errors[0]?.error
+          ? body.errors[0].error
+          : undefined) ??
+        `Request failed: ${res.status}`,
     ) as Error & {
       status?: number;
       code?: string;
+      errors?: unknown;
     };
     err.status = res.status;
-    err.code = body.code;
+    err.code = body.code ?? body.errors?.[0]?.code;
+    err.errors = body.errors;
     throw err;
   }
   return res.json();
@@ -127,6 +133,7 @@ function toRestaurant(r: Record<string, unknown>): Restaurant {
           deliveryHour: ow.deliveryHour,
         }
       : undefined,
+    servingDays: Array.isArray(r.servingDays) ? (r.servingDays as number[]) : undefined,
     referral: r.referral as Restaurant["referral"],
     hasPromptPay: Boolean(r.promptPayPayload),
   };
@@ -177,6 +184,7 @@ function toOrder(o: Record<string, unknown>): Order {
     paymentStatus: o.paymentStatus as Order["paymentStatus"],
     paymentProof,
     serviceDate: o.serviceDate as string | undefined,
+    batchId: o.batchId as string | undefined,
     createdAt: o.createdAt as string,
     customer,
   };
@@ -198,8 +206,9 @@ function toUser(u: Record<string, unknown>): User {
 
 // --- Restaurants ---
 
-export async function fetchRestaurants(): Promise<Restaurant[]> {
-  const data = await request<Record<string, unknown>[]>("/restaurants");
+export async function fetchRestaurants(serviceDate?: string): Promise<Restaurant[]> {
+  const qs = serviceDate ? `?serviceDate=${serviceDate}` : "";
+  const data = await request<Record<string, unknown>[]>(`/restaurants${qs}`);
   return data.map(toRestaurant);
 }
 
@@ -261,6 +270,106 @@ export async function placeOrder(payload: PlaceOrderPayload): Promise<Order> {
     body: JSON.stringify(payload),
   });
   return toOrder(data);
+}
+
+export interface BatchDayPayload {
+  serviceDate: string;
+  items: { menuItemId: string; quantity: number; note?: string }[];
+}
+
+export interface PlaceBatchPayload {
+  restaurantId: string;
+  days: BatchDayPayload[];
+}
+
+export interface PlaceBatchResult {
+  batchId: string;
+  orders: Order[];
+  grandTotal: number;
+}
+
+export interface BatchValidationError {
+  serviceDate?: string;
+  error: string;
+  code?: string;
+}
+
+function toBatch(raw: Record<string, unknown>): import("../data/types").OrderBatch {
+  const orders = ((raw.orders as Record<string, unknown>[]) ?? []).map(toOrder);
+  const rawProof = raw.paymentProof as Record<string, unknown> | undefined;
+  const paymentProof = rawProof?.fileKey
+    ? {
+        fileKey: rawProof.fileKey as string,
+        contentType: rawProof.contentType as string,
+        sizeBytes: rawProof.sizeBytes as number,
+        uploadedAt: rawProof.uploadedAt as string,
+        status: rawProof.status as import("../data/types").PaymentProof["status"],
+        reviewedAt: rawProof.reviewedAt as string | undefined,
+        reviewerNote: rawProof.reviewerNote as string | undefined,
+      }
+    : undefined;
+  return {
+    id: raw._id as string,
+    userId: raw.userId as string,
+    restaurantId: raw.restaurantId as string,
+    orderIds: (raw.orderIds as string[]) ?? orders.map((o) => o.id),
+    grandTotal: raw.grandTotal as number,
+    status: raw.status as Order["status"],
+    paymentProof,
+    orders,
+    createdAt: raw.createdAt as string,
+  };
+}
+
+export async function placeOrderBatch(
+  payload: PlaceBatchPayload,
+): Promise<PlaceBatchResult> {
+  const data = await request<{
+    batchId: string;
+    orders: Record<string, unknown>[];
+    grandTotal: number;
+  }>("/batches", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+  return {
+    batchId: data.batchId,
+    orders: data.orders.map(toOrder),
+    grandTotal: data.grandTotal,
+  };
+}
+
+export async function fetchBatch(id: string): Promise<import("../data/types").OrderBatch> {
+  const data = await request<Record<string, unknown>>(`/batches/${id}`);
+  return toBatch(data);
+}
+
+export async function payBatch(batchId: string): Promise<PromptPayQR> {
+  return request<PromptPayQR>(`/batches/${batchId}/pay`, { method: "POST" });
+}
+
+export async function fetchBatchPayment(batchId: string): Promise<PromptPayQR> {
+  return request<PromptPayQR>(`/batches/${batchId}/payment`);
+}
+
+export async function uploadBatchPaymentProof(
+  batchId: string,
+  file: File,
+): Promise<import("../data/types").OrderBatch> {
+  const data = await uploadFile<Record<string, unknown>>(
+    `/batches/${batchId}/payment-proof`,
+    file,
+  );
+  return toBatch(data);
+}
+
+export async function cancelBatch(
+  batchId: string,
+): Promise<import("../data/types").OrderBatch> {
+  const data = await request<Record<string, unknown>>(`/batches/${batchId}/cancel`, {
+    method: "POST",
+  });
+  return toBatch(data);
 }
 
 export async function fetchOrder(id: string): Promise<Order> {
