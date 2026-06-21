@@ -66,7 +66,6 @@ router.patch("/restaurant", async (req: Request, res: Response) => {
     "isOpen",
     "orderWindow",
     "servingDays",
-    "deliveryTime",
     "tags",
     "categories",
   ];

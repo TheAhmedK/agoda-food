@@ -14,6 +14,7 @@ import {
   DEFAULT_SERVING_DAYS,
   isOrderableForDate,
 } from '../lib/serviceDates'
+import { computeOrderTotals } from '../lib/orderTotals'
 import type { RestaurantWithMenu } from '../data/types'
 
 const router = useRouter()
@@ -22,6 +23,7 @@ const user = useUserStore()
 const selectedDay = useSelectedDayStore()
 
 const restaurant = ref<RestaurantWithMenu | null>(null)
+const restaurantLoading = ref(true)
 const isPlacing = ref(false)
 const orderError = ref<string | null>(null)
 
@@ -38,11 +40,16 @@ const orderedDates = computed(() => {
 })
 
 onMounted(async () => {
-  if (!cart.activeRestaurantId) return
+  if (!cart.activeRestaurantId) {
+    restaurantLoading.value = false
+    return
+  }
   try {
     restaurant.value = await fetchRestaurantWithMenu(cart.activeRestaurantId)
   } catch {
-    /* chips fall back to defaults */
+    orderError.value = 'Could not load restaurant details. Please try again.'
+  } finally {
+    restaurantLoading.value = false
   }
 })
 
@@ -57,11 +64,35 @@ const otpError = ref<string | null>(null)
 
 const orderWindow = computed(() => restaurant.value?.orderWindow ?? defaultOrderWindow())
 
+const orderTotals = computed(() =>
+  computeOrderTotals({
+    dates: cart.datesInCart,
+    subtotal: cart.subtotal,
+    subtotalForDate: cart.subtotalForDate,
+    deliveryFeePerDay: restaurant.value?.deliveryFee ?? 0,
+    minOrder: restaurant.value?.minOrder ?? 0,
+  }),
+)
+
 const closedDatesInCart = computed(() =>
   cart.datesInCart.filter((d) => !isOrderableForDate(orderWindow.value, d)),
 )
 
 const hasClosedDates = computed(() => closedDatesInCart.value.length > 0)
+
+const belowMinOrder = computed(() => !orderTotals.value.meetsMinOrder)
+
+const canCheckout = computed(
+  () =>
+    !restaurantLoading.value &&
+    restaurant.value !== null &&
+    !hasClosedDates.value &&
+    !belowMinOrder.value,
+)
+
+function isDateBelowMinOrder(date: string) {
+  return orderTotals.value.daysBelowMinOrder.includes(date)
+}
 
 function isDateClosed(date: string) {
   return !isOrderableForDate(orderWindow.value, date)
@@ -75,9 +106,13 @@ function removeClosedDates() {
 }
 
 function proceedToCheckout() {
-  if (cart.items.length === 0 || !cart.activeRestaurantId) return
+  if (cart.items.length === 0 || !cart.activeRestaurantId || !canCheckout.value) return
   if (hasClosedDates.value) {
     orderError.value = 'Some days in your cart have passed their order cut-off. Remove them to continue.'
+    return
+  }
+  if (belowMinOrder.value) {
+    orderError.value = `Each day needs at least ฿${orderTotals.value.minOrder} in food before checkout.`
     return
   }
   saveDraft({
@@ -85,8 +120,9 @@ function proceedToCheckout() {
     restaurantName: cart.items[0]!.restaurantName,
     items: JSON.parse(JSON.stringify(cart.items)),
     subtotal: cart.subtotal,
-    deliveryFee: 0,
-    total: cart.subtotal,
+    deliveryFee: orderTotals.value.totalDeliveryFee,
+    minOrder: orderTotals.value.minOrder,
+    total: orderTotals.value.grandTotal,
     lunchCount: lunchCount.value,
     savedAt: new Date().toISOString(),
   })
@@ -95,9 +131,13 @@ function proceedToCheckout() {
 }
 
 function submitOrder() {
-  if (cart.items.length === 0 || !cart.activeRestaurantId) return
+  if (cart.items.length === 0 || !cart.activeRestaurantId || !canCheckout.value) return
   if (hasClosedDates.value) {
     orderError.value = 'Some days in your cart have passed their order cut-off. Remove them to continue.'
+    return
+  }
+  if (belowMinOrder.value) {
+    orderError.value = `Each day needs at least ฿${orderTotals.value.minOrder} in food before checkout.`
     return
   }
 
@@ -315,19 +355,46 @@ async function verifyOtpCode() {
 
           <div class="flex justify-between px-4 py-3 text-sm border-t border-gray-100 bg-gray-50">
             <span class="text-gray-500">Day subtotal</span>
-            <span class="font-semibold text-gray-900">฿{{ cart.subtotalForDate(date) }}</span>
+            <div class="text-right">
+              <span class="font-semibold text-gray-900">฿{{ cart.subtotalForDate(date) }}</span>
+              <p
+                v-if="isDateBelowMinOrder(date)"
+                class="text-[11px] text-amber-700 mt-0.5"
+              >
+                Min ฿{{ orderTotals.minOrder }} required
+              </p>
+            </div>
           </div>
         </div>
 
         <div class="bg-white rounded-2xl border border-gray-100 shadow-sm px-4 py-4 mb-4 space-y-2">
           <div class="flex justify-between text-sm text-gray-600">
-            <span>{{ lunchCount }} lunch{{ lunchCount > 1 ? 'es' : '' }}</span>
+            <span>Food subtotal ({{ lunchCount }} lunch{{ lunchCount > 1 ? 'es' : '' }})</span>
             <span>฿{{ cart.subtotal }}</span>
+          </div>
+          <div class="flex justify-between text-sm text-gray-600">
+            <span>
+              Delivery
+              <span v-if="lunchCount > 1" class="text-gray-400">
+                (฿{{ orderTotals.deliveryFeePerDay }} × {{ lunchCount }})
+              </span>
+            </span>
+            <span>{{ orderTotals.totalDeliveryFee === 0 ? 'Free' : `฿${orderTotals.totalDeliveryFee}` }}</span>
           </div>
           <div class="border-t border-gray-100 pt-2 flex justify-between font-bold text-gray-900">
             <span>Total</span>
-            <span>฿{{ cart.subtotal }}</span>
+            <span>฿{{ orderTotals.grandTotal }}</span>
           </div>
+        </div>
+
+        <div
+          v-if="belowMinOrder"
+          class="bg-amber-50 border border-amber-200 text-amber-800 text-sm rounded-xl px-4 py-3 mb-4"
+        >
+          <p class="font-medium mb-1">Minimum order not met</p>
+          <p class="text-xs text-amber-700">
+            Each delivery day needs at least ฿{{ orderTotals.minOrder }} in food before you can checkout.
+          </p>
         </div>
 
         <div v-if="orderError" class="bg-red-50 border border-red-200 text-red-700 text-sm rounded-xl px-4 py-3 mb-4">
@@ -336,10 +403,13 @@ async function verifyOtpCode() {
 
         <button
           @click="submitOrder"
-          :disabled="isPlacing || hasClosedDates"
+          :disabled="isPlacing || !canCheckout"
           class="w-full bg-brand-500 disabled:opacity-60 text-white rounded-2xl py-4 font-bold text-base shadow-lg"
         >
-          Checkout · {{ lunchCount }} lunch{{ lunchCount > 1 ? 'es' : '' }} · ฿{{ cart.subtotal }}
+          <template v-if="restaurantLoading">Loading…</template>
+          <template v-else>
+            Checkout · {{ lunchCount }} lunch{{ lunchCount > 1 ? 'es' : '' }} · ฿{{ orderTotals.grandTotal }}
+          </template>
         </button>
       </div>
     </div>

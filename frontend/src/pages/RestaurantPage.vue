@@ -156,8 +156,6 @@ const windowLabel = computed(() =>
           <span class="text-gray-400 font-normal">({{ restaurant.reviewCount }})</span>
         </span>
         <span>·</span>
-        <span>🕐 {{ restaurant.deliveryTime }}</span>
-        <span>·</span>
         <span>{{ restaurant.deliveryFee === 0 ? '🎉 Free delivery' : `฿${restaurant.deliveryFee} delivery` }}</span>
       </div>
     </div>

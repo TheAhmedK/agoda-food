@@ -29,7 +29,6 @@ interface SeedRestaurant {
   cuisine: string
   rating: number
   reviewCount: number
-  deliveryTime: string
   deliveryFee: number
   minOrder: number
   imageUrl: string
@@ -48,7 +47,6 @@ const seedData: SeedRestaurant[] = [
     cuisine: 'Thai – Isaan',
     rating: 4.8,
     reviewCount: 312,
-    deliveryTime: '15–25 min',
     deliveryFee: 0,
     minOrder: 150,
     imageUrl: 'https://images.unsplash.com/photo-1569050467447-ce54b3bbc37d?w=800&auto=format&fit=crop',
@@ -106,7 +104,6 @@ const seedData: SeedRestaurant[] = [
     cuisine: 'Thai – Hot Pot',
     rating: 4.5,
     reviewCount: 198,
-    deliveryTime: '20–35 min',
     deliveryFee: 30,
     minOrder: 300,
     imageUrl: 'https://images.unsplash.com/photo-1583778176476-4a8b02a64c01?w=800&auto=format&fit=crop',
@@ -155,7 +152,6 @@ const seedData: SeedRestaurant[] = [
     cuisine: 'Thai – Street Food',
     rating: 4.9,
     reviewCount: 521,
-    deliveryTime: '25–40 min',
     deliveryFee: 50,
     minOrder: 200,
     imageUrl: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=800&auto=format&fit=crop',
@@ -204,7 +200,6 @@ const seedData: SeedRestaurant[] = [
     cuisine: 'Italian-American',
     rating: 4.2,
     reviewCount: 87,
-    deliveryTime: '30–45 min',
     deliveryFee: 40,
     minOrder: 250,
     imageUrl: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=800&auto=format&fit=crop',

@@ -6,6 +6,7 @@ import { useCartStore } from '../stores/cart'
 import { placeOrderBatch } from '../services/api'
 import { readDraft, clearDraft, type CheckoutDraft } from '../services/checkoutDraft'
 import { expandCartToBatchDays, formatServiceDateLabel } from '../lib/serviceDates'
+import { computeOrderTotals } from '../lib/orderTotals'
 
 const router = useRouter()
 const cart = useCartStore()
@@ -18,6 +19,22 @@ const payError = ref<string | null>(null)
 const dayGroups = computed(() =>
   draft.value ? expandCartToBatchDays(draft.value.items) : [],
 )
+
+const orderTotals = computed(() => {
+  if (!draft.value) return null
+  const dates = [...new Set(draft.value.items.map((i) => i.serviceDate))].sort()
+  return computeOrderTotals({
+    dates,
+    subtotal: draft.value.subtotal,
+    subtotalForDate: (date) =>
+      draft.value!.items
+        .filter((i) => i.serviceDate === date)
+        .reduce((sum, i) => sum + i.menuItem.price * i.quantity, 0),
+    deliveryFeePerDay:
+      dates.length > 0 ? draft.value.deliveryFee / dates.length : draft.value.deliveryFee,
+    minOrder: draft.value.minOrder ?? 0,
+  })
+})
 
 onMounted(() => {
   const d = readDraft()
@@ -42,7 +59,11 @@ function shortRestaurantName(name: string) {
 }
 
 async function payWithPromptPay() {
-  if (!draft.value) return
+  if (!draft.value || !orderTotals.value) return
+  if (!orderTotals.value.meetsMinOrder) {
+    payError.value = `Each day needs at least ฿${orderTotals.value.minOrder} in food before checkout.`
+    return
+  }
   isPaying.value = true
   payError.value = null
   try {
@@ -64,12 +85,16 @@ async function payWithPromptPay() {
     clearDraft()
     router.replace(`/batch/${result.batchId}`)
   } catch (e) {
-    const err = e as Error & { code?: string; status?: number }
+    const err = e as Error & { code?: string; status?: number; errors?: { error: string }[] }
     if (err.code === 'EMAIL_VERIFICATION_REQUIRED') {
       router.replace('/cart')
       return
     }
-    payError.value = err.message ?? 'Failed to place order'
+    if (Array.isArray(err.errors) && err.errors.length > 0) {
+      payError.value = err.errors.map((x) => x.error).join(' ')
+    } else {
+      payError.value = err.message ?? 'Failed to place order'
+    }
     isPaying.value = false
   }
 }
@@ -113,8 +138,27 @@ function backToCart() {
                 <span class="font-medium">฿{{ item.price * item.quantity }}</span>
               </div>
             </div>
+            <div class="flex justify-between text-xs text-gray-500 mt-2">
+              <span>Day subtotal</span>
+              <span>฿{{ day.items.reduce((sum, item) => sum + item.price * item.quantity, 0) }}</span>
+            </div>
           </div>
 
+          <div class="border-t border-gray-100 mt-3 pt-3 space-y-2 text-sm text-gray-600">
+            <div class="flex justify-between">
+              <span>Food subtotal</span>
+              <span>฿{{ draft.subtotal }}</span>
+            </div>
+            <div class="flex justify-between">
+              <span>
+                Delivery
+                <span v-if="draft.lunchCount > 1 && orderTotals" class="text-gray-400">
+                  (฿{{ orderTotals.deliveryFeePerDay }} × {{ draft.lunchCount }})
+                </span>
+              </span>
+              <span>{{ draft.deliveryFee === 0 ? 'Free' : `฿${draft.deliveryFee}` }}</span>
+            </div>
+          </div>
           <div class="border-t border-gray-100 mt-3 pt-3 flex justify-between font-bold text-gray-900">
             <span>Total</span><span>฿{{ draft.total }}</span>
           </div>
@@ -127,7 +171,7 @@ function backToCart() {
         <div class="w-full space-y-3">
           <button
             @click="payWithPromptPay"
-            :disabled="isPaying"
+            :disabled="isPaying || (orderTotals && !orderTotals.meetsMinOrder)"
             class="w-full bg-brand-500 disabled:opacity-60 text-white rounded-2xl py-4 font-bold text-base shadow-lg"
           >
             {{ isPaying ? 'Processing…' : `Place order · ฿${draft.total}` }}

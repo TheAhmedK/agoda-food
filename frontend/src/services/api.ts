@@ -116,7 +116,6 @@ function toRestaurant(r: Record<string, unknown>): Restaurant {
     cuisine: r.cuisine as string,
     rating: r.rating as number,
     reviewCount: r.reviewCount as number,
-    deliveryTime: r.deliveryTime as string,
     deliveryFee: r.deliveryFee as number,
     minOrder: r.minOrder as number,
     imageUrl: r.imageUrl as string,

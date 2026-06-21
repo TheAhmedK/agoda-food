@@ -53,10 +53,6 @@ const dimmed = computed(() => !props.restaurant.isOpen || !props.available)
       </div>
 
       <div class="flex items-center gap-3 mt-3 text-sm text-gray-500">
-        <span class="flex items-center gap-1">
-          <span>🕐</span>{{ restaurant.deliveryTime }}
-        </span>
-        <span>·</span>
         <span>{{ restaurant.deliveryFee === 0 ? 'Free' : `฿${restaurant.deliveryFee}` }} delivery</span>
         <span>·</span>
         <span>Min ฿{{ restaurant.minOrder }}</span>

@@ -34,7 +34,6 @@ const saved = ref(false)
 const form = reactive({
   name: '',
   cuisine: '',
-  deliveryTime: '',
   deliveryFee: 0,
   minOrder: 0,
   cutoffHour: 18,
@@ -67,7 +66,6 @@ onMounted(async () => {
     restaurant.value = r
     form.name = r.name
     form.cuisine = r.cuisine
-    form.deliveryTime = r.deliveryTime
     form.deliveryFee = r.deliveryFee
     form.minOrder = r.minOrder
     form.cutoffHour = r.orderWindow?.cutoffHour ?? 18
@@ -189,7 +187,6 @@ async function save() {
     const updated = await updateMerchantRestaurant({
       name: form.name,
       cuisine: form.cuisine,
-      deliveryTime: form.deliveryTime,
       deliveryFee: form.deliveryFee,
       minOrder: form.minOrder,
       orderWindow: {
@@ -268,11 +265,7 @@ function toggleServingDay(day: number) {
             </div>
           </div>
 
-          <div class="grid grid-cols-3 gap-3">
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1.5">Delivery time</label>
-              <input v-model="form.deliveryTime" type="text" placeholder="20–35 min" class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-300" />
-            </div>
+          <div class="grid grid-cols-2 gap-3">
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-1.5">Delivery fee (฿)</label>
               <input v-model.number="form.deliveryFee" type="number" min="0" class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-300" />

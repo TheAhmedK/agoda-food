@@ -20,7 +20,6 @@ export interface IRestaurant extends Document {
   cuisine: string
   rating: number
   reviewCount: number
-  deliveryTime: string
   deliveryFee: number
   minOrder: number
   imageUrl: string
@@ -67,7 +66,6 @@ const RestaurantSchema = new Schema<IRestaurant>(
     cuisine: { type: String, required: true },
     rating: { type: Number, required: true, min: 0, max: 5 },
     reviewCount: { type: Number, required: true, default: 0, min: 0 },
-    deliveryTime: { type: String, required: true },
     deliveryFee: { type: Number, required: true, default: 0, min: 0 },
     minOrder: { type: Number, required: true, default: 0, min: 0 },
     imageUrl: { type: String, required: true },

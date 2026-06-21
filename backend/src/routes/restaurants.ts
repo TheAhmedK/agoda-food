@@ -235,7 +235,6 @@ router.post(
         logoUrl: PLACEHOLDER_LOGO_URL,
         rating: 0,
         reviewCount: 0,
-        deliveryTime: '30–45 min',
         deliveryFee: 0,
         minOrder: 0,
         tags: [],

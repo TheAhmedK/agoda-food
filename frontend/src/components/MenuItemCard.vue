@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import type { MenuItem, MenuItemTag } from '../data/types'
+import type { MenuItem } from '../data/types'
+import { TAG_STYLES } from '../lib/menuItemTags'
 import { useCartStore } from '../stores/cart'
 import { useSelectedDayStore } from '../stores/selectedDay'
 
@@ -46,13 +47,6 @@ function removeOne() {
   cart.removeItem(props.menuItem.id, selectedDay.serviceDate)
 }
 
-const TAG_STYLES: Record<MenuItemTag, { label: string; classes: string }> = {
-  Popular: { label: '⭐ Popular', classes: 'bg-brand-500 text-white' },
-  Vegetarian: { label: '🌿 Veg', classes: 'bg-green-500 text-white' },
-  Vegan: { label: '🌱 Vegan', classes: 'bg-emerald-600 text-white' },
-  Spicy: { label: '🌶️ Spicy', classes: 'bg-red-500 text-white' },
-  GlutenFree: { label: 'GF', classes: 'bg-amber-500 text-white' },
-}
 </script>
 
 <template>

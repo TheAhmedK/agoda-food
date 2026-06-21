@@ -9,6 +9,7 @@ export interface CheckoutDraft {
   items: CartItem[]
   subtotal: number
   deliveryFee: number
+  minOrder: number
   total: number
   lunchCount: number
   savedAt: string

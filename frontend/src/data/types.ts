@@ -27,7 +27,6 @@ export interface Restaurant {
   cuisine: string
   rating: number
   reviewCount: number
-  deliveryTime: string
   deliveryFee: number
   minOrder: number
   imageUrl: string
