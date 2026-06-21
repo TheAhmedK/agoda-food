@@ -83,7 +83,7 @@ function skip() {
             class="w-10 h-10 rounded-full object-cover"
             alt="Profile"
           />
-          <span v-else class="w-10 h-10 rounded-full bg-brand-500 text-white flex items-center justify-center font-bold">
+          <span v-else class="w-10 h-10 rounded-full bg-brand-700 text-white flex items-center justify-center font-bold">
             {{ userStore.user.displayName.charAt(0).toUpperCase() }}
           </span>
           <span class="font-semibold text-gray-900">{{ userStore.user.displayName }}</span>
@@ -127,7 +127,7 @@ function skip() {
         <button
           type="submit"
           :disabled="saving"
-          class="w-full bg-brand-500 disabled:opacity-60 text-white rounded-xl py-3 font-semibold"
+          class="w-full bg-brand-700 disabled:opacity-60 text-white rounded-xl py-3 font-semibold"
         >
           {{ saving ? 'Saving…' : 'Save & continue' }}
         </button>

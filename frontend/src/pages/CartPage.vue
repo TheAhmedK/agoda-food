@@ -226,7 +226,7 @@ async function verifyOtpCode() {
         <h2 class="font-bold text-gray-800 text-xl mb-2">Your cart is empty</h2>
         <button
           @click="router.push('/')"
-          class="bg-brand-500 text-white px-6 py-3 rounded-2xl font-semibold"
+          class="bg-brand-700 text-white px-6 py-3 rounded-2xl font-semibold"
         >
           Browse restaurants
         </button>
@@ -234,7 +234,7 @@ async function verifyOtpCode() {
 
       <div v-else>
         <div class="flex items-center gap-3 mb-6">
-          <button @click="router.back()" class="text-brand-500 text-sm">← Back</button>
+          <button @click="router.back()" class="text-brand-700 text-sm">← Back</button>
           <h1 class="font-bold text-gray-900 text-xl">Your pre-order</h1>
         </div>
 
@@ -273,13 +273,13 @@ async function verifyOtpCode() {
             class="flex items-center justify-between px-4 py-3 border-b"
             :class="isDateClosed(date)
               ? 'bg-amber-50 border-amber-100'
-              : 'bg-brand-50 border-brand-100'"
+              : 'bg-brand-700'"
           >
             <div class="flex items-center gap-2">
               <span>📅</span>
               <span
                 class="font-semibold text-sm"
-                :class="isDateClosed(date) ? 'text-amber-800' : 'text-brand-800'"
+                :class="isDateClosed(date) ? 'text-amber-800' : 'text-white'"
               >
                 {{ formatServiceDateLong(date) }}
               </span>
@@ -290,12 +290,7 @@ async function verifyOtpCode() {
                 Closed
               </span>
             </div>
-            <span
-              v-if="index === 0"
-              class="text-[10px] uppercase tracking-wide font-semibold text-brand-600 bg-white border border-brand-200 rounded-full px-2 py-0.5"
-            >
-              Selected day
-            </span>
+            
           </div>
 
           <div class="divide-y divide-gray-100">
@@ -344,7 +339,7 @@ async function verifyOtpCode() {
                   <button
                     @click="cart.addItem(item.menuItem, item.restaurantId, item.restaurantName, date)"
                     :disabled="isDateClosed(date)"
-                    class="w-7 h-7 rounded-full bg-brand-500 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center font-bold text-white text-sm"
+                    class="w-7 h-7 rounded-full bg-brand-700 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center font-bold text-white text-sm"
                   >
                     +
                   </button>
@@ -404,7 +399,7 @@ async function verifyOtpCode() {
         <button
           @click="submitOrder"
           :disabled="isPlacing || !canCheckout"
-          class="w-full bg-brand-500 disabled:opacity-60 text-white rounded-2xl py-4 font-bold text-base shadow-lg"
+          class="w-full bg-brand-700 disabled:opacity-60 text-white rounded-2xl py-4 font-bold text-base shadow-lg"
         >
           <template v-if="restaurantLoading">Loading…</template>
           <template v-else>

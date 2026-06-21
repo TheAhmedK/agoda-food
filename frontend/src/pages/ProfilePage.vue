@@ -70,7 +70,7 @@ async function save() {
 
     <div class="max-w-2xl mx-auto px-4 py-6">
       <div class="flex items-center gap-3 mb-6">
-        <button @click="router.back()" class="text-brand-500 text-sm">← Back</button>
+        <button @click="router.back()" class="text-brand-700 text-sm">← Back</button>
         <h1 class="font-bold text-gray-900 text-xl">Profile</h1>
       </div>
 
@@ -87,7 +87,7 @@ async function save() {
         @submit.prevent="save"
       >
         <div class="flex items-center gap-3 pb-3 border-b border-gray-100">
-          <span class="w-12 h-12 rounded-full bg-brand-500 text-white flex items-center justify-center text-lg font-bold">
+          <span class="w-12 h-12 rounded-full bg-brand-700 text-white flex items-center justify-center text-lg font-bold">
             {{ form.displayName.charAt(0).toUpperCase() }}
           </span>
           <div class="min-w-0">
@@ -146,7 +146,7 @@ async function save() {
         <button
           type="submit"
           :disabled="saving"
-          class="w-full bg-brand-500 disabled:opacity-60 text-white rounded-xl py-3 font-semibold"
+          class="w-full bg-brand-700 disabled:opacity-60 text-white rounded-xl py-3 font-semibold"
         >
           {{ saving ? 'Saving…' : 'Save changes' }}
         </button>

@@ -241,7 +241,7 @@ async function submit() {
           v-if="!otpSent"
           type="button"
           :disabled="sending"
-          class="w-full bg-brand-500 disabled:opacity-60 text-white rounded-xl py-3 font-semibold"
+          class="w-full bg-brand-700 disabled:opacity-60 text-white rounded-xl py-3 font-semibold"
           @click="sendOtp"
         >
           {{ sending ? 'Sending code…' : 'Send verification code' }}
@@ -250,7 +250,7 @@ async function submit() {
           v-else
           type="submit"
           :disabled="submitting"
-          class="w-full bg-brand-500 disabled:opacity-60 text-white rounded-xl py-3 font-semibold"
+          class="w-full bg-brand-700 disabled:opacity-60 text-white rounded-xl py-3 font-semibold"
         >
           {{ submitting ? 'Verifying…' : 'Verify & create restaurant' }}
         </button>

@@ -307,7 +307,7 @@ const tabs: FaqTab[] = [
 
     <div class="max-w-2xl mx-auto px-4 py-6">
       <div class="flex items-center gap-3 mb-2">
-        <button @click="router.back()" class="text-brand-500 text-sm">← Back</button>
+        <button @click="router.back()" class="text-brand-700 text-sm">← Back</button>
         <h1 class="font-bold text-gray-900 text-xl">Help &amp; FAQ</h1>
       </div>
       <p class="text-gray-500 text-sm mb-5">
@@ -327,7 +327,7 @@ const tabs: FaqTab[] = [
           class="flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors"
           :class="
             activeTab === tab.key
-              ? 'bg-brand-500 text-white shadow-sm'
+              ? 'bg-brand-700 text-white shadow-sm'
               : 'text-gray-600 hover:bg-gray-50'
           "
           @click="(activeTab = tab.key), (openKey = null)"
@@ -388,7 +388,7 @@ const tabs: FaqTab[] = [
         </p>
         <a
           href="mailto:ahmed.arshad@agoda.com?subject=Agoda%20Food%20—%20Help"
-          class="inline-flex items-center gap-2 bg-brand-500 hover:bg-brand-600 text-white text-sm font-medium px-4 py-2 rounded-xl"
+          class="inline-flex items-center gap-2 bg-brand-700 hover:bg-brand-600 text-white text-sm font-medium px-4 py-2 rounded-xl"
         >
           <span aria-hidden="true">✉️</span>
           <span>Ahmed Kamal · ahmed.arshad@agoda.com</span>

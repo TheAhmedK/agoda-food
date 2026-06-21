@@ -49,10 +49,12 @@ const filtered = computed(() => {
           r.tags.some((t) => t.toLowerCase().includes(q)),
       )
     : restaurants.value
-  // Serving restaurants first, closed-for-this-day ones after.
-  return [...matches].sort(
-    (a, b) => Number(serves(b)) - Number(serves(a)),
-  )
+  // Open restaurants first, then serving-day matches within each group.
+  return [...matches].sort((a, b) => {
+    const openDiff = Number(b.isOpen) - Number(a.isOpen)
+    if (openDiff !== 0) return openDiff
+    return Number(serves(b)) - Number(serves(a))
+  })
 })
 
 const servingCount = computed(() => filtered.value.filter(serves).length)
@@ -63,11 +65,12 @@ const servingCount = computed(() => filtered.value.filter(serves).length)
     <AppHeader />
 
     <!-- Hero -->
-    <div class="bg-gradient-to-br from-brand-500 to-brand-700 text-white px-4 pt-6 pb-8">
+    <div class="bg-brand-700 text-white px-4 pt-6 pb-8">
       <div class="max-w-2xl mx-auto">
-        <h1 class="text-2xl font-bold mb-1">Pre-order office lunch 🍜</h1>
-        <p class="text-brand-100 text-sm mb-5">Pick a day, choose a restaurant, order ahead</p>
+        <h1 class="text-2xl font-bold mb-1">PRE-ORDER OFFICE LUNCH 🍜</h1>
+        <p class="text-brand-50 text-sm mb-5">Pick a day, Choose a restaurant, Order ahead</p>
 
+        <br/>
         <DayPicker v-model="selectedDay.serviceDate" />
 
         <div class="relative">
@@ -101,7 +104,7 @@ const servingCount = computed(() => filtered.value.filter(serves).length)
       <template v-else>
         <div class="flex items-center justify-between mb-4">
           <h2 class="font-bold text-gray-900 text-lg">
-            {{ servingCount }} serving on {{ formatServiceDateLabel(selectedDay.serviceDate) }}
+            {{ servingCount }} restos serving on {{ formatServiceDateLabel(selectedDay.serviceDate) }}
           </h2>
         </div>
 

@@ -38,7 +38,7 @@ defineEmits<{
 const TONE = {
   danger: { iconBg: 'bg-red-50', icon: '⚠️', btn: 'bg-red-600 hover:bg-red-700' },
   warn: { iconBg: 'bg-amber-50', icon: '⚠️', btn: 'bg-amber-600 hover:bg-amber-700' },
-  brand: { iconBg: 'bg-brand-50', icon: '✨', btn: 'bg-brand-500 hover:bg-brand-600' },
+  brand: { iconBg: 'bg-brand-50', icon: '✨', btn: 'bg-brand-700 hover:bg-brand-600' },
 } as const
 </script>
 

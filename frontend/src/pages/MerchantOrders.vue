@@ -354,7 +354,7 @@ async function submitRejection() {
           type="button"
           @click="requestToggle"
           class="relative inline-flex h-6 w-11 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-brand-200 shrink-0"
-          :class="restaurant.isOpen ? 'bg-brand-500' : 'bg-gray-300'"
+          :class="restaurant.isOpen ? 'bg-brand-700' : 'bg-gray-300'"
           :aria-label="restaurant.isOpen ? 'Stop accepting orders' : 'Start accepting orders'"
         >
           <span

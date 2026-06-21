@@ -44,8 +44,8 @@ function onToggle(dateStr: string) {
         class="text-xs font-medium px-2.5 py-1 rounded-full border transition-colors"
         :class="
           isSelected(dateStr)
-            ? 'bg-brand-500 text-white border-brand-500'
-            : 'bg-white text-gray-600 border-gray-200 hover:border-brand-300'
+            ? 'bg-brand-700 text-white'
+            : 'bg-white text-gray-600 border-gray-200 hover:border-brand-700'
         "
       >
         {{ formatServiceDateLabel(dateStr) }}

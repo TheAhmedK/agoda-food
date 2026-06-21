@@ -76,7 +76,7 @@ function removeOne() {
         <button
           @click="tryAdd"
           :disabled="!orderingEnabled"
-          class="flex items-center gap-1 bg-brand-500 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-medium px-3 py-1.5 rounded-full active:scale-95 transition-transform"
+          class="flex items-center gap-1 bg-brand-700 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-medium px-3 py-1.5 rounded-full active:scale-95 transition-transform"
         >
           <span class="text-sm leading-none">+</span> Add
         </button>
@@ -92,7 +92,7 @@ function removeOne() {
         <button
           @click="tryAdd"
           :disabled="!orderingEnabled"
-          class="w-7 h-7 rounded-full bg-brand-500 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center font-bold text-white text-sm active:scale-95"
+          class="w-7 h-7 rounded-full bg-brand-700 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center font-bold text-white text-sm active:scale-95"
         >
           +
         </button>
@@ -130,7 +130,7 @@ function removeOne() {
           <button
             @click="tryAdd"
             :disabled="!orderingEnabled"
-            class="flex items-center gap-1 bg-brand-500 disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-medium px-3 py-1.5 rounded-full active:scale-95 transition-transform"
+            class="flex items-center gap-1 bg-brand-700 disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-medium px-3 py-1.5 rounded-full active:scale-95 transition-transform"
           >
             <span class="text-base leading-none">+</span> Add
           </button>
@@ -147,7 +147,7 @@ function removeOne() {
           <button
             @click="tryAdd"
             :disabled="!orderingEnabled"
-            class="w-8 h-8 rounded-full bg-brand-500 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center font-bold text-white active:scale-95 transition-transform"
+            class="w-8 h-8 rounded-full bg-brand-700 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center font-bold text-white active:scale-95 transition-transform"
           >
             +
           </button>

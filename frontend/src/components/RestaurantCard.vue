@@ -42,7 +42,7 @@ const dimmed = computed(() => !props.restaurant.isOpen || !props.available)
     <div class="p-4">
       <div class="flex items-start justify-between gap-2">
         <div>
-          <h3 class="font-bold text-gray-900 text-base">{{ restaurant.name }}</h3>
+          <h3 class="font-black text-brand-700 text-xl">{{ restaurant.name }}</h3>
           <p class="text-gray-500 text-sm mt-0.5">{{ restaurant.cuisine }}</p>
         </div>
         <div class="flex items-center gap-1 shrink-0 bg-brand-50 px-2 py-1 rounded-lg">
