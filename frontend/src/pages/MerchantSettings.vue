@@ -285,10 +285,10 @@ function toggleServingDay(day: number) {
                 :key="opt.value"
                 type="button"
                 @click="toggleServingDay(opt.value)"
-                class="text-sm font-medium px-3 py-1.5 rounded-full border transition-colors"
+                class="text-sm font-medium px-3 py-1.5 rounded-full"
                 :class="
                   form.servingDays.includes(opt.value)
-                    ? 'bg-brand-500 text-white border-brand-500'
+                    ? 'bg-brand-700 text-white border-brand-500'
                     : 'bg-white text-gray-600 border-gray-200'
                 "
               >
@@ -318,7 +318,7 @@ function toggleServingDay(day: number) {
           <div v-if="saveError" class="bg-red-50 border border-red-200 text-red-700 text-sm rounded-xl px-3 py-2">{{ saveError }}</div>
           <div v-if="saved" class="bg-green-50 border border-green-200 text-green-700 text-sm rounded-xl px-3 py-2">✓ Saved successfully</div>
 
-          <button type="submit" :disabled="saving" class="w-full bg-brand-500 disabled:opacity-60 text-white rounded-xl py-3 font-semibold">
+          <button type="submit" :disabled="saving" class="w-full bg-brand-700 disabled:opacity-60 text-white rounded-xl py-3 font-semibold">
             {{ saving ? 'Saving…' : 'Save changes' }}
           </button>
         </form>
@@ -359,7 +359,7 @@ function toggleServingDay(day: number) {
                 type="button"
                 @click="pickCover"
                 :disabled="coverUploading"
-                class="bg-brand-500 disabled:opacity-60 text-white text-sm font-semibold rounded-xl px-4 py-2"
+                class="bg-brand-700 disabled:opacity-60 text-white text-sm font-semibold rounded-xl px-4 py-2"
               >
                 {{ coverUploading ? 'Uploading…' : restaurant.imageUrl ? 'Replace cover' : 'Upload cover' }}
               </button>
@@ -394,7 +394,7 @@ function toggleServingDay(day: number) {
                 type="button"
                 @click="pickLogo"
                 :disabled="logoUploading"
-                class="bg-brand-500 disabled:opacity-60 text-white text-sm font-semibold rounded-xl px-4 py-2"
+                class="bg-brand-700 disabled:opacity-60 text-white text-sm font-semibold rounded-xl px-4 py-2"
               >
                 {{ logoUploading ? 'Uploading…' : restaurant.logoUrl ? 'Replace logo' : 'Upload logo' }}
               </button>
@@ -446,7 +446,7 @@ function toggleServingDay(day: number) {
               type="button"
               @click="pickQrFile"
               :disabled="qrUploading"
-              class="flex-1 bg-brand-500 disabled:opacity-60 text-white rounded-xl py-2.5 font-semibold text-sm"
+              class="flex-1 bg-brand-700 disabled:opacity-60 text-white rounded-xl py-2.5 font-semibold text-sm"
             >
               {{ qrUploading ? 'Reading QR…' : qrConfigured ? 'Replace QR' : 'Upload PromptPay QR' }}
             </button>

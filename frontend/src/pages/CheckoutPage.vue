@@ -110,7 +110,7 @@ function backToCart() {
 
     <div v-if="draft" class="max-w-2xl mx-auto px-4 py-6">
       <div class="flex items-center gap-3 mb-4">
-        <button @click="backToCart" class="text-brand-500 text-sm">← Back</button>
+        <button @click="backToCart" class="text-brand-700 text-sm">← Back</button>
       </div>
 
       <div class="flex flex-col items-center text-center">
@@ -172,7 +172,7 @@ function backToCart() {
           <button
             @click="payWithPromptPay"
             :disabled="isPaying || (orderTotals != null && !orderTotals.meetsMinOrder)"
-            class="w-full bg-brand-500 disabled:opacity-60 text-white rounded-2xl py-4 font-bold text-base shadow-lg"
+            class="w-full bg-brand-700 disabled:opacity-60 text-white rounded-2xl py-4 font-bold text-base shadow-lg"
           >
             {{ isPaying ? 'Processing…' : `Place order · ฿${draft.total}` }}
           </button>

@@ -57,8 +57,8 @@ onBeforeUnmount(() => document.removeEventListener('click', handleDocClick))
 <template>
   <header class="sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm">
     <div class="max-w-2xl mx-auto px-4 h-14 flex items-center justify-between gap-3">
-      <button @click="router.push('/')" class="flex items-center gap-2">
-        <img src="/agoda-food-log.png" alt="Agoda Food" class="w-8 h-8 object-contain" />
+      <button @click="router.push('/')" class="flex items-center">
+        <img src="/AF-logo.png" alt="Agoda Food" class="w-12 h-12 object-contain" />
         <span class="font-bold text-gray-900 text-lg">Agoda Food</span>
       </button>
 
@@ -77,7 +77,7 @@ onBeforeUnmount(() => document.removeEventListener('click', handleDocClick))
             />
             <span
               v-else
-              class="w-6 h-6 rounded-full bg-brand-500 text-white flex items-center justify-center text-xs font-bold"
+              class="w-6 h-6 rounded-full bg-brand-700 text-white flex items-center justify-center text-xs font-bold"
             >
               {{ user.user!.displayName.charAt(0).toUpperCase() }}
             </span>
@@ -142,10 +142,10 @@ onBeforeUnmount(() => document.removeEventListener('click', handleDocClick))
 
         <button
           @click="router.push('/cart')"
-          class="relative flex items-center gap-1.5 bg-brand-500 text-white px-4 py-2 rounded-full text-sm font-medium active:scale-95 transition-transform"
+          class="relative flex items-center gap-1.5 bg-brand-700 text-white px-4 py-2 rounded-full text-sm font-medium active:scale-95 transition-transform"
           :class="{ 'opacity-50 cursor-default': cart.totalItems === 0 }"
         >
-          <span>🛒</span>
+          <img src="/basket-icon.svg" alt="" aria-hidden="true" class="w-5 h-5" />
           <span class="hidden sm:inline">Cart</span>
           <span
             v-if="cart.totalItems > 0"

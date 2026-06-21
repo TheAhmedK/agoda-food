@@ -156,7 +156,7 @@ function stopPolling() {
 
     <div v-else-if="error" class="max-w-2xl mx-auto px-4 py-20 text-center">
       <p class="font-medium text-gray-700">{{ error }}</p>
-      <button @click="router.push('/')" class="mt-6 bg-brand-500 text-white px-6 py-3 rounded-2xl font-semibold">
+      <button @click="router.push('/')" class="mt-6 bg-brand-700 text-white px-6 py-3 rounded-2xl font-semibold">
         Back to home
       </button>
     </div>
@@ -201,7 +201,7 @@ function stopPolling() {
           <button
             @click="generateQR"
             :disabled="requesting"
-            class="w-full bg-brand-500 text-white rounded-2xl py-4 font-bold"
+            class="w-full bg-brand-700 text-white rounded-2xl py-4 font-bold"
           >
             {{ requesting ? 'Loading…' : `Show PromptPay · ฿${batch.grandTotal}` }}
           </button>
@@ -218,14 +218,14 @@ function stopPolling() {
             @click="pickProof"
             class="w-full border-2 border-dashed border-brand-300 rounded-xl py-6 text-brand-600 font-semibold"
           >
-            I've paid — upload screenshot
+            Have you paid? — upload screenshot
           </button>
           <div v-else class="space-y-3">
             <img :src="proofPreview" class="w-full rounded-xl border" />
             <button
               @click="submitProof"
               :disabled="uploadingProof"
-              class="w-full bg-brand-500 text-white rounded-xl py-3 font-semibold"
+              class="w-full bg-brand-700 text-white rounded-xl py-3 font-semibold"
             >
               {{ uploadingProof ? 'Uploading…' : 'Send to restaurant' }}
             </button>
@@ -248,7 +248,7 @@ function stopPolling() {
 
       <template v-else>
         <p class="text-center text-sm text-gray-500 mb-4">Pickup at Agoda HQ around lunch on each day.</p>
-        <button @click="router.push('/orders')" class="w-full bg-brand-500 text-white rounded-2xl py-3 font-semibold">
+        <button @click="router.push('/orders')" class="w-full bg-brand-700 text-white rounded-2xl py-3 font-semibold">
           View my orders
         </button>
       </template>

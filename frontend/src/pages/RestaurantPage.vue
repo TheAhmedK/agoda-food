@@ -116,7 +116,7 @@ const windowLabel = computed(() =>
     <div class="text-center">
       <div class="text-5xl mb-3">⚠️</div>
       <p class="font-medium text-gray-700">{{ error }}</p>
-      <button @click="router.push('/')" class="mt-4 text-brand-500 underline text-sm">Go home</button>
+      <button @click="router.push('/')" class="mt-4 text-brand-700 underline text-sm">Go home</button>
     </div>
   </div>
 
@@ -125,7 +125,7 @@ const windowLabel = computed(() =>
     <div class="text-center">
       <div class="text-5xl mb-3">🍽️</div>
       <p>Restaurant not found</p>
-      <button @click="router.push('/')" class="mt-4 text-brand-500 underline text-sm">Go home</button>
+      <button @click="router.push('/')" class="mt-4 text-brand-700 underline text-sm">Go home</button>
     </div>
   </div>
 
@@ -196,7 +196,7 @@ const windowLabel = computed(() =>
     >
       <section v-for="category in categories" :key="category">
         <h2 class="font-bold text-gray-900 text-base mb-3 flex items-center gap-2">
-          <span class="w-1 h-5 bg-brand-500 rounded-full inline-block"></span>
+          <span class="w-1 h-5 bg-brand-700 rounded-full inline-block"></span>
           {{ categoryLabel(category) }}
         </h2>
         <div class="grid grid-cols-2 gap-3">
@@ -255,7 +255,7 @@ const windowLabel = computed(() =>
             </button>
             <button
               @click="confirmSwitchRestaurant"
-              class="flex-1 bg-brand-500 text-white rounded-xl py-3 font-semibold text-sm hover:bg-brand-600"
+              class="flex-1 bg-brand-700 text-white rounded-xl py-3 font-semibold text-sm hover:bg-brand-600"
             >
               Start new cart
             </button>
@@ -272,7 +272,7 @@ const windowLabel = computed(() =>
       >
         <button
           @click="router.push('/cart')"
-          class="w-full max-w-sm bg-brand-500 text-white rounded-2xl py-4 font-bold text-base shadow-xl flex items-center justify-between px-5 active:scale-[0.97] transition-transform"
+          class="w-full max-w-sm bg-brand-700 text-white rounded-2xl py-4 font-bold text-base shadow-xl flex items-center justify-between px-5 active:scale-[0.97] transition-transform"
         >
           <span class="bg-brand-600 rounded-xl px-2.5 py-0.5 text-sm font-bold">{{ cart.totalItems }}</span>
           <span>View Cart</span>

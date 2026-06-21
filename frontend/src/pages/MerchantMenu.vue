@@ -224,7 +224,7 @@ async function confirmDelete() {
       <!-- Form (add / edit) -->
       <div v-if="mode !== 'list'">
         <div class="flex items-center gap-3 mb-5">
-          <button @click="mode = 'list'" class="text-brand-500 text-sm">← Back</button>
+          <button @click="mode = 'list'" class="text-brand-700 text-sm">← Back</button>
           <h1 class="font-bold text-gray-900 text-lg">{{ mode === 'add' ? 'Add dish' : 'Edit dish' }}</h1>
         </div>
 
@@ -282,7 +282,7 @@ async function confirmDelete() {
               >
                 <span
                   class="w-4 h-4 rounded border flex items-center justify-center shrink-0"
-                  :class="isTagSelected(tag) ? 'bg-brand-500 border-brand-500 text-white' : 'border-gray-300'"
+                  :class="isTagSelected(tag) ? 'bg-brand-700 border-brand-500 text-white' : 'border-gray-300'"
                 >
                   <span v-if="isTagSelected(tag)" class="text-xs leading-none">✓</span>
                 </span>
@@ -328,7 +328,7 @@ async function confirmDelete() {
                   type="button"
                   @click="pickPhoto"
                   :disabled="photoUploading"
-                  class="bg-brand-500 disabled:opacity-60 text-white text-xs font-semibold rounded-lg px-3 py-1.5"
+                  class="bg-brand-700 disabled:opacity-60 text-white text-xs font-semibold rounded-lg px-3 py-1.5"
                 >
                   {{ photoUploading ? 'Uploading…' : form.imageUrl ? 'Replace photo' : 'Upload photo' }}
                 </button>
@@ -350,13 +350,13 @@ async function confirmDelete() {
             <span class="text-sm font-medium text-gray-700">Available to order</span>
             <button type="button" @click="form.isAvailable = !form.isAvailable"
               class="relative inline-flex h-6 w-11 rounded-full transition-colors"
-              :class="form.isAvailable ? 'bg-brand-500' : 'bg-gray-200'">
+              :class="form.isAvailable ? 'bg-brand-700' : 'bg-gray-200'">
               <span class="inline-block w-5 h-5 rounded-full bg-white shadow transform transition-transform mt-0.5"
                 :class="form.isAvailable ? 'translate-x-5' : 'translate-x-1'" />
             </button>
           </div>
           <div v-if="formError" class="bg-red-50 border border-red-200 text-red-700 text-sm rounded-xl px-3 py-2">{{ formError }}</div>
-          <button type="submit" :disabled="saving" class="w-full bg-brand-500 disabled:opacity-60 text-white rounded-xl py-3 font-semibold">
+          <button type="submit" :disabled="saving" class="w-full bg-brand-700 disabled:opacity-60 text-white rounded-xl py-3 font-semibold">
             {{ saving ? 'Saving…' : 'Save dish' }}
           </button>
         </form>
@@ -366,7 +366,7 @@ async function confirmDelete() {
       <div v-else>
         <div class="flex items-center justify-between mb-5">
           <h1 class="font-bold text-gray-900 text-lg">Menu</h1>
-          <button @click="openAdd" class="bg-brand-500 text-white px-4 py-2 rounded-xl text-sm font-semibold">
+          <button @click="openAdd" class="bg-brand-700 text-white px-4 py-2 rounded-xl text-sm font-semibold">
             + Add dish
           </button>
         </div>

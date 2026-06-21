@@ -171,7 +171,7 @@ function customerInitials(name: string): string {
           v-if="NEXT_STATUS[order.status]"
           @click="$emit('advance', order)"
           :disabled="updatingId === order.id"
-          class="bg-brand-500 disabled:opacity-60 text-white px-4 py-1.5 rounded-xl text-xs font-semibold"
+          class="bg-brand-700 disabled:opacity-60 text-white px-4 py-1.5 rounded-xl text-xs font-semibold"
         >
           {{ updatingId === order.id ? 'Updating…' : ADVANCE_LABELS[order.status] }}
         </button>

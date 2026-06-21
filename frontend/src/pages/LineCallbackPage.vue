@@ -66,7 +66,7 @@ onMounted(async () => {
       <p class="text-gray-500 text-sm">{{ error }}</p>
       <button
         @click="$router.replace('/login')"
-        class="bg-brand-500 text-white px-6 py-3 rounded-2xl font-semibold"
+        class="bg-brand-700 text-white px-6 py-3 rounded-2xl font-semibold"
       >
         Back to login
       </button>

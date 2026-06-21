@@ -14,6 +14,16 @@ type FlexBox = messagingApi.FlexBox
 type FlexComponent = messagingApi.FlexComponent
 type FlexContainer = messagingApi.FlexContainer
 
+// Mirrors frontend/tailwind.config.js → theme.extend.colors.brand
+const BRAND = {
+  50: '#f9faf7',
+  100: '#fdd762',
+  500: '#7db557',
+  550: '#4e7036',
+  600: '#c23b41',
+  700: '#4376b4',
+} as const
+
 export interface OrderSummary {
   /** Display-only short id (last 6 chars of the Mongo ObjectId, uppercase). */
   id: string
@@ -44,11 +54,11 @@ const STATUS_COLORS: Record<string, string> = {
   awaiting_payment: '#d97706', // amber-600
   pending_verification: '#ca8a04', // yellow-600
   pending: '#2563eb', // blue-600
-  confirmed: '#f97316', // brand-500 / orange-500
+  confirmed: BRAND[700],
   preparing: '#9333ea', // purple-600
   in_delivery: '#0284c7', // sky-600
-  delivered: '#16a34a', // green-600
-  cancelled: '#dc2626', // red-600
+  delivered: BRAND[500],
+  cancelled: BRAND[600],
 }
 
 function statusPill(status: string): FlexBox {
@@ -79,7 +89,7 @@ function orderHeader(orderId: string, status: string): FlexBox {
   return {
     type: 'box',
     layout: 'horizontal',
-    backgroundColor: '#fff7ed',
+    backgroundColor: BRAND[50],
     paddingAll: '12px',
     alignItems: 'center',
     contents: [
@@ -135,7 +145,7 @@ function itemRow(item: OrderSummary['items'][number]): FlexBox {
         type: 'text',
         text: `Note: ${note}`,
         size: 'xs',
-        color: '#b45309',
+        color: BRAND[550],
         wrap: true,
         margin: 'xs',
       },
@@ -155,7 +165,7 @@ function totalRow(total: number): FlexBox {
         text: `฿${total}`,
         weight: 'bold',
         size: 'sm',
-        color: '#f97316',
+        color: BRAND[600],
         align: 'end',
         flex: 0,
       },
@@ -329,7 +339,7 @@ export function buildOrderDetailsBubble(input: OrderDetailsInput): FlexBubble {
       type: 'text',
       text: 'Customer has paid — awaiting your approval',
       size: 'xs',
-      color: '#d97706',
+      color: BRAND[600],
       wrap: true,
     })
   }

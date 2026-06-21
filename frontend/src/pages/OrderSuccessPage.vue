@@ -203,14 +203,14 @@ const STATUS_BADGE: Record<string, { label: string; class: string }> = {
     <div v-else-if="error" class="max-w-2xl mx-auto px-4 py-20 text-center">
       <div class="text-5xl mb-3">⚠️</div>
       <p class="font-medium text-gray-700">{{ error }}</p>
-      <button @click="router.push('/')" class="mt-6 bg-brand-500 text-white px-6 py-3 rounded-2xl font-semibold">
+      <button @click="router.push('/')" class="mt-6 bg-brand-700 text-white px-6 py-3 rounded-2xl font-semibold">
         Back to home
       </button>
     </div>
 
     <div v-else-if="order" class="max-w-2xl mx-auto px-4 py-6">
       <div class="flex items-center gap-3 mb-4">
-        <button @click="router.push('/orders')" class="text-brand-500 text-sm">← Back to orders</button>
+        <button @click="router.push('/orders')" class="text-brand-700 text-sm">← Back to orders</button>
       </div>
 
       <div class="flex flex-col items-center text-center">
@@ -326,7 +326,7 @@ const STATUS_BADGE: Record<string, { label: string; class: string }> = {
             <button
               @click="generateQR"
               :disabled="requesting || cancelling"
-              class="w-full bg-brand-500 disabled:opacity-60 text-white rounded-2xl py-4 font-bold text-base shadow-lg active:scale-[0.97] transition-transform"
+              class="w-full bg-brand-700 disabled:opacity-60 text-white rounded-2xl py-4 font-bold text-base shadow-lg active:scale-[0.97] transition-transform"
             >
               {{ requesting ? 'Loading…' : `Pay ฿${order.total} with PromptPay` }}
             </button>
@@ -386,7 +386,7 @@ const STATUS_BADGE: Record<string, { label: string; class: string }> = {
                   <button
                     @click="submitProof"
                     :disabled="uploadingProof"
-                    class="flex-[2] bg-brand-500 disabled:opacity-60 text-white rounded-xl py-2.5 font-semibold text-sm"
+                    class="flex-[2] bg-brand-700 disabled:opacity-60 text-white rounded-xl py-2.5 font-semibold text-sm"
                   >
                     {{ uploadingProof ? 'Uploading…' : 'Send to restaurant' }}
                   </button>
@@ -402,7 +402,7 @@ const STATUS_BADGE: Record<string, { label: string; class: string }> = {
                   class="w-full border-2 border-dashed border-brand-300 hover:border-brand-500 hover:bg-brand-50 transition-colors rounded-xl py-6 text-brand-600 text-sm font-semibold flex flex-col items-center gap-1"
                 >
                   <span class="text-2xl">📷</span>
-                  <span>I've paid — upload screenshot</span>
+                  <span>Have you paid? — Upload Screenshot</span>
                   <span class="text-xs text-gray-400 font-normal">PNG or JPEG, up to 8 MB</span>
                 </button>
               </div>
@@ -459,7 +459,7 @@ const STATUS_BADGE: Record<string, { label: string; class: string }> = {
 
           <button
             @click="router.push('/')"
-            class="bg-brand-500 text-white px-8 py-3 rounded-2xl font-semibold text-base"
+            class="bg-brand-700 text-white px-8 py-3 rounded-2xl font-semibold text-base"
           >
             Order more food
           </button>

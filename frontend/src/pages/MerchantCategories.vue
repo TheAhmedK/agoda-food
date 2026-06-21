@@ -145,7 +145,7 @@ async function confirmDelete() {
           <button
             type="submit"
             :disabled="adding || !newName.trim()"
-            class="bg-brand-500 disabled:opacity-50 text-white px-4 py-2 rounded-xl text-sm font-semibold"
+            class="bg-brand-700 disabled:opacity-50 text-white px-4 py-2 rounded-xl text-sm font-semibold"
           >
             {{ adding ? 'Adding…' : 'Add' }}
           </button>

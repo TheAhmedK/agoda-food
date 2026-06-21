@@ -81,7 +81,7 @@ const STATUS_LABELS: Record<Order['status'], string> = {
 
     <div class="max-w-2xl mx-auto px-4 py-6">
       <div class="flex items-center gap-3 mb-6">
-        <button @click="goBack" class="text-brand-500 text-sm">← Back</button>
+        <button @click="goBack" class="text-brand-700 text-sm">← Back</button>
         <h1 class="font-bold text-gray-900 text-xl">My orders</h1>
       </div>
 
@@ -102,7 +102,7 @@ const STATUS_LABELS: Record<Order['status'], string> = {
         <p class="text-gray-500 text-sm mb-6">Place your first order to see it here.</p>
         <button
           @click="router.push('/')"
-          class="bg-brand-500 text-white px-6 py-3 rounded-2xl font-semibold"
+          class="bg-brand-700 text-white px-6 py-3 rounded-2xl font-semibold"
         >
           Browse restaurants
         </button>
