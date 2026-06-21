@@ -1,22 +1,32 @@
 <script setup lang="ts">
-import type { MenuItem, MenuItemTag } from '../data/types'
+import { computed } from 'vue'
+import type { MenuItem } from '../data/types'
+import { TAG_STYLES } from '../lib/menuItemTags'
 import { useCartStore } from '../stores/cart'
+import { useSelectedDayStore } from '../stores/selectedDay'
 
-const props = defineProps<{
-  menuItem: MenuItem
-  restaurantId: string
-  restaurantName: string
-}>()
+const props = withDefaults(
+  defineProps<{
+    menuItem: MenuItem
+    restaurantId: string
+    restaurantName: string
+    orderingEnabled?: boolean
+  }>(),
+  { orderingEnabled: true },
+)
 
 const emit = defineEmits<{
   (e: 'request-switch-restaurant', payload: { menuItem: MenuItem; restaurantId: string; restaurantName: string }): void
 }>()
 
 const cart = useCartStore()
+const selectedDay = useSelectedDayStore()
 
-// If the cart already has items from a different restaurant, defer to the
-// parent so it can show a confirmation modal. Otherwise, add directly.
+// Quantity is tracked against the currently selected delivery day.
+const qty = computed(() => cart.getQuantity(props.menuItem.id, selectedDay.serviceDate))
+
 function tryAdd() {
+  if (!props.orderingEnabled) return
   if (cart.wouldClearCartFor(props.restaurantId)) {
     emit('request-switch-restaurant', {
       menuItem: props.menuItem,
@@ -25,16 +35,18 @@ function tryAdd() {
     })
     return
   }
-  cart.addItem(props.menuItem, props.restaurantId, props.restaurantName)
+  cart.addItem(
+    props.menuItem,
+    props.restaurantId,
+    props.restaurantName,
+    selectedDay.serviceDate,
+  )
 }
 
-const TAG_STYLES: Record<MenuItemTag, { label: string; classes: string }> = {
-  Popular: { label: '⭐ Popular', classes: 'bg-brand-500 text-white' },
-  Vegetarian: { label: '🌿 Veg', classes: 'bg-green-500 text-white' },
-  Vegan: { label: '🌱 Vegan', classes: 'bg-emerald-600 text-white' },
-  Spicy: { label: '🌶️ Spicy', classes: 'bg-red-500 text-white' },
-  GlutenFree: { label: 'GF', classes: 'bg-amber-500 text-white' },
+function removeOne() {
+  cart.removeItem(props.menuItem.id, selectedDay.serviceDate)
 }
+
 </script>
 
 <template>
@@ -60,25 +72,27 @@ const TAG_STYLES: Record<MenuItemTag, { label: string; classes: string }> = {
 
     <div class="shrink-0 flex flex-col items-end gap-2">
       <span class="font-bold text-gray-900 text-sm">฿{{ menuItem.price }}</span>
-      <div v-if="cart.getQuantity(menuItem.id) === 0">
+      <div v-if="qty === 0">
         <button
           @click="tryAdd"
-          class="flex items-center gap-1 bg-brand-500 text-white text-xs font-medium px-3 py-1.5 rounded-full active:scale-95 transition-transform"
+          :disabled="!orderingEnabled"
+          class="flex items-center gap-1 bg-brand-500 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-medium px-3 py-1.5 rounded-full active:scale-95 transition-transform"
         >
           <span class="text-sm leading-none">+</span> Add
         </button>
       </div>
       <div v-else class="flex items-center gap-1.5">
         <button
-          @click="cart.removeItem(menuItem.id)"
+          @click="removeOne"
           class="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center font-bold text-gray-700 text-sm active:scale-95"
         >
           −
         </button>
-        <span class="font-bold text-brand-600 w-4 text-center text-sm">{{ cart.getQuantity(menuItem.id) }}</span>
+        <span class="font-bold text-brand-600 w-4 text-center text-sm">{{ qty }}</span>
         <button
           @click="tryAdd"
-          class="w-7 h-7 rounded-full bg-brand-500 flex items-center justify-center font-bold text-white text-sm active:scale-95"
+          :disabled="!orderingEnabled"
+          class="w-7 h-7 rounded-full bg-brand-500 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center font-bold text-white text-sm active:scale-95"
         >
           +
         </button>
@@ -112,10 +126,11 @@ const TAG_STYLES: Record<MenuItemTag, { label: string; classes: string }> = {
       <div class="flex items-center justify-between mt-3">
         <span class="font-bold text-gray-900">฿{{ menuItem.price }}</span>
 
-        <div v-if="cart.getQuantity(menuItem.id) === 0">
+        <div v-if="qty === 0">
           <button
             @click="tryAdd"
-            class="flex items-center gap-1 bg-brand-500 text-white text-sm font-medium px-3 py-1.5 rounded-full active:scale-95 transition-transform"
+            :disabled="!orderingEnabled"
+            class="flex items-center gap-1 bg-brand-500 disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-medium px-3 py-1.5 rounded-full active:scale-95 transition-transform"
           >
             <span class="text-base leading-none">+</span> Add
           </button>
@@ -123,15 +138,16 @@ const TAG_STYLES: Record<MenuItemTag, { label: string; classes: string }> = {
 
         <div v-else class="flex items-center gap-2">
           <button
-            @click="cart.removeItem(menuItem.id)"
+            @click="removeOne"
             class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center font-bold text-gray-700 active:scale-95 transition-transform"
           >
             −
           </button>
-          <span class="font-bold text-brand-600 w-4 text-center">{{ cart.getQuantity(menuItem.id) }}</span>
+          <span class="font-bold text-brand-600 w-4 text-center">{{ qty }}</span>
           <button
             @click="tryAdd"
-            class="w-8 h-8 rounded-full bg-brand-500 flex items-center justify-center font-bold text-white active:scale-95 transition-transform"
+            :disabled="!orderingEnabled"
+            class="w-8 h-8 rounded-full bg-brand-500 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center font-bold text-white active:scale-95 transition-transform"
           >
             +
           </button>

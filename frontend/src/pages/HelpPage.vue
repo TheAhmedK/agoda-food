@@ -242,7 +242,7 @@ const tabs: FaqTab[] = [
           },
           {
             q: 'How do I move an order through its statuses?',
-            a: 'From the Orders tab tap Accept → Preparing → Ready → Completed. You can Reject a pending order; refunds are then triggered automatically for Stripe-paid orders.',
+            a: 'From the Orders tab tap Accept → Preparing → Ready → Completed. You can Reject a pending order; you will have to manually refund the customer. You can contact the customer by phone/email showing on the order page.',
           },
           {
             q: 'What if I cannot fulfill an order I already accepted?',

@@ -20,9 +20,8 @@ interface SeedMenuItem {
 }
 
 interface SeedOrderWindow {
-  openHour: number
-  closeHour: number
-  deliveryHour: number
+  cutoffHour: number
+  pickupHour: number
 }
 
 interface SeedRestaurant {
@@ -30,7 +29,6 @@ interface SeedRestaurant {
   cuisine: string
   rating: number
   reviewCount: number
-  deliveryTime: string
   deliveryFee: number
   minOrder: number
   imageUrl: string
@@ -39,6 +37,7 @@ interface SeedRestaurant {
   isOpen: boolean
   status: 'active' | 'draft' | 'suspended'
   orderWindow: SeedOrderWindow
+  servingDays: number[]
   menuItems: SeedMenuItem[]
 }
 
@@ -48,7 +47,6 @@ const seedData: SeedRestaurant[] = [
     cuisine: 'Thai – Isaan',
     rating: 4.8,
     reviewCount: 312,
-    deliveryTime: '15–25 min',
     deliveryFee: 0,
     minOrder: 150,
     imageUrl: 'https://images.unsplash.com/photo-1569050467447-ce54b3bbc37d?w=800&auto=format&fit=crop',
@@ -56,7 +54,8 @@ const seedData: SeedRestaurant[] = [
     tags: ['Isaan', 'Spicy', 'Popular'],
     isOpen: true,
     status: 'active',
-    orderWindow: { openHour: 17, closeHour: 10, deliveryHour: 12 },
+    orderWindow: { cutoffHour: 18, pickupHour: 12 },
+    servingDays: [1, 2, 3, 4, 5],
     menuItems: [
       {
         name: 'Som Tum Thai',
@@ -105,7 +104,6 @@ const seedData: SeedRestaurant[] = [
     cuisine: 'Thai – Hot Pot',
     rating: 4.5,
     reviewCount: 198,
-    deliveryTime: '20–35 min',
     deliveryFee: 30,
     minOrder: 300,
     imageUrl: 'https://images.unsplash.com/photo-1583778176476-4a8b02a64c01?w=800&auto=format&fit=crop',
@@ -113,7 +111,8 @@ const seedData: SeedRestaurant[] = [
     tags: ['Hot Pot', 'Sharing', 'Premium'],
     isOpen: true,
     status: 'active',
-    orderWindow: { openHour: 17, closeHour: 10, deliveryHour: 12 },
+    orderWindow: { cutoffHour: 18, pickupHour: 12 },
+    servingDays: [1, 2, 3, 4, 5],
     menuItems: [
       {
         name: 'MK Sukiyaki Set (2 pax)',
@@ -153,7 +152,6 @@ const seedData: SeedRestaurant[] = [
     cuisine: 'Thai – Street Food',
     rating: 4.9,
     reviewCount: 521,
-    deliveryTime: '25–40 min',
     deliveryFee: 50,
     minOrder: 200,
     imageUrl: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=800&auto=format&fit=crop',
@@ -161,7 +159,8 @@ const seedData: SeedRestaurant[] = [
     tags: ['Street Food', 'Michelin', 'Seafood'],
     isOpen: true,
     status: 'active',
-    orderWindow: { openHour: 17, closeHour: 10, deliveryHour: 12 },
+    orderWindow: { cutoffHour: 18, pickupHour: 12 },
+    servingDays: [1, 2, 3, 4, 5],
     menuItems: [
       {
         name: 'Crab Omelette (Kai Jeaw Poo)',
@@ -201,7 +200,6 @@ const seedData: SeedRestaurant[] = [
     cuisine: 'Italian-American',
     rating: 4.2,
     reviewCount: 87,
-    deliveryTime: '30–45 min',
     deliveryFee: 40,
     minOrder: 250,
     imageUrl: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=800&auto=format&fit=crop',
@@ -209,7 +207,8 @@ const seedData: SeedRestaurant[] = [
     tags: ['Pizza', 'Western', 'Family'],
     isOpen: false,
     status: 'active',
-    orderWindow: { openHour: 17, closeHour: 10, deliveryHour: 12 },
+    orderWindow: { cutoffHour: 18, pickupHour: 12 },
+    servingDays: [1, 2, 3, 4, 5],
     menuItems: [
       {
         name: 'Pepperoni Classic',

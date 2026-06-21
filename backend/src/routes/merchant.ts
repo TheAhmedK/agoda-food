@@ -8,6 +8,11 @@ import { Payment } from "@models/Payment";
 import { requireMerchant } from "@middleware/auth";
 import { getServiceDate } from "@lib/orderWindow";
 import {
+  confirmBatchPayment,
+  rejectBatchPayment,
+  findBatchByOrderId,
+} from "@lib/batchPayment";
+import {
   decodeQrFromImage,
   isPromptPayPayload,
   renderQrDataUrl,
@@ -60,7 +65,7 @@ router.patch("/restaurant", async (req: Request, res: Response) => {
     "deliveryFee",
     "isOpen",
     "orderWindow",
-    "deliveryTime",
+    "servingDays",
     "tags",
     "categories",
   ];
@@ -590,6 +595,14 @@ router.post(
       const expireFileAt = new Date(now.getTime() + PROOF_FILE_RETENTION_MS);
 
       if (action === "confirm") {
+        const batch = await findBatchByOrderId(order._id);
+        if (batch && batch.status === "pending_verification") {
+          await confirmBatchPayment(batch, now);
+          const refreshed = await Order.findById(order._id);
+          res.json(refreshed);
+          return;
+        }
+
         // Authoritative audit row in the Payment collection.
         await Payment.updateOne(
           {
@@ -630,6 +643,14 @@ router.post(
 
         const trimmedReason =
           typeof reason === "string" ? reason.trim().slice(0, 500) : "";
+
+        const batch = await findBatchByOrderId(order._id);
+        if (batch && batch.status === "pending_verification") {
+          await rejectBatchPayment(batch, mode, trimmedReason, now);
+          const refreshed = await Order.findById(order._id);
+          res.json(refreshed);
+          return;
+        }
 
         await Payment.updateOne(
           {

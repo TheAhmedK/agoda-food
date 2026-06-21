@@ -7,6 +7,7 @@ import path from 'path'
 import { config } from '@config/AppConfig'
 import restaurantRoutes from '@routes/restaurants'
 import orderRoutes from '@routes/orders'
+import batchRoutes from '@routes/batches'
 import authRoutes from '@routes/auth'
 import userRoutes from '@routes/users'
 import emailRoutes from '@routes/email'
@@ -43,6 +44,7 @@ app.use('/api/auth/email', emailRoutes)
 app.use('/api/users', userRoutes)
 app.use('/api/restaurants', restaurantRoutes)
 app.use('/api/orders', orderRoutes)
+app.use('/api/batches', batchRoutes)
 app.use('/api/merchant', merchantRoutes)
 
 app.get('/health', (_req, res) => {

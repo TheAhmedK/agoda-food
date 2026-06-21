@@ -1,13 +1,27 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import type { Restaurant } from '../data/types'
 
-const props = defineProps<{ restaurant: Restaurant }>()
+const props = withDefaults(
+  defineProps<{
+    restaurant: Restaurant
+    /** Whether this restaurant serves the currently selected day. */
+    available?: boolean
+    /** Overlay label shown when unavailable (defaults to "Closed"). */
+    unavailableLabel?: string
+  }>(),
+  { available: true, unavailableLabel: 'Closed' },
+)
+
+const dimmed = computed(() => !props.restaurant.isOpen || !props.available)
 </script>
 
 <template>
   <div
-    class="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 active:scale-[0.98] transition-transform cursor-pointer"
-    :class="{ 'opacity-60': !restaurant.isOpen }"
+    class="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 transition-transform"
+    :class="dimmed
+      ? 'opacity-60 cursor-not-allowed'
+      : 'active:scale-[0.98] cursor-pointer'"
   >
     <div class="relative h-44 overflow-hidden">
       <img
@@ -15,8 +29,10 @@ const props = defineProps<{ restaurant: Restaurant }>()
         :alt="restaurant.name"
         class="w-full h-full object-cover"
       />
-      <div v-if="!restaurant.isOpen" class="absolute inset-0 bg-black/40 flex items-center justify-center">
-        <span class="bg-white text-gray-700 text-sm font-semibold px-3 py-1 rounded-full">Closed</span>
+      <div v-if="dimmed" class="absolute inset-0 bg-black/40 flex items-center justify-center">
+        <span class="bg-white text-gray-700 text-sm font-semibold px-3 py-1 rounded-full">
+          {{ !restaurant.isOpen ? 'Closed' : unavailableLabel }}
+        </span>
       </div>
       <div v-if="restaurant.deliveryFee === 0" class="absolute top-3 left-3">
         <span class="bg-green-500 text-white text-xs font-semibold px-2 py-1 rounded-full">Free delivery</span>
@@ -37,10 +53,6 @@ const props = defineProps<{ restaurant: Restaurant }>()
       </div>
 
       <div class="flex items-center gap-3 mt-3 text-sm text-gray-500">
-        <span class="flex items-center gap-1">
-          <span>🕐</span>{{ restaurant.deliveryTime }}
-        </span>
-        <span>·</span>
         <span>{{ restaurant.deliveryFee === 0 ? 'Free' : `฿${restaurant.deliveryFee}` }} delivery</span>
         <span>·</span>
         <span>Min ฿{{ restaurant.minOrder }}</span>

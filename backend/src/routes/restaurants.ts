@@ -5,10 +5,12 @@ import { requireUser } from '@middleware/auth'
 import { generateOtp, verifyOtp } from '@lib/otp'
 import { getPublicStorage } from '@lib/storage'
 import { config } from '@config/AppConfig'
+import { isValidServiceDateStr } from '@lib/orderWindow'
 
 const router = Router()
 
 // GET /api/restaurants — list (active only unless the caller owns one)
+// Optional ?serviceDate=YYYY-MM-DD filters to restaurants serving that weekday.
 router.get('/', async (req: Request, res: Response) => {
   try {
     const authHeader = req.header('Authorization') ?? ''
@@ -22,12 +24,23 @@ router.get('/', async (req: Request, res: Response) => {
       }
     }
 
+    const serviceDate =
+      typeof req.query.serviceDate === 'string' ? req.query.serviceDate : undefined
+    if (serviceDate && !isValidServiceDateStr(serviceDate)) {
+      res.status(400).json({ error: 'serviceDate must be YYYY-MM-DD' })
+      return
+    }
+
     // Build filter: public sees status=active only
     const filter = callerId
       ? { $or: [{ status: 'active' }, { ownerUserId: callerId }] }
       : { status: 'active' }
 
+    // Return all restaurants regardless of serviceDate; the client renders
+    // ones that don't serve the selected day as "closed" rather than hiding
+    // them, so the list stays stable as the customer flips between days.
     const restaurants = await Restaurant.find(filter).sort({ createdAt: 1 })
+
     res.json(restaurants)
   } catch (err) {
     res.status(500).json({ error: 'Failed to fetch restaurants' })
@@ -222,7 +235,6 @@ router.post(
         logoUrl: PLACEHOLDER_LOGO_URL,
         rating: 0,
         reviewCount: 0,
-        deliveryTime: '30–45 min',
         deliveryFee: 0,
         minOrder: 0,
         tags: [],
@@ -234,7 +246,8 @@ router.post(
           email: referralEmail,
           verifiedAt: new Date(),
         },
-        orderWindow: { openHour: 17, closeHour: 10, deliveryHour: 12 },
+        orderWindow: { cutoffHour: 18, pickupHour: 12 },
+        servingDays: [1, 2, 3, 4, 5],
       })
 
       const user = req.user!

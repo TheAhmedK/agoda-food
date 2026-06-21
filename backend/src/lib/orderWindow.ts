@@ -1,108 +1,129 @@
 const TZ = 'Asia/Bangkok'
 
+/** Mon–Fri when a restaurant has no explicit schedule. 0 = Sun … 6 = Sat. */
+export const DEFAULT_SERVING_DAYS = [1, 2, 3, 4, 5]
+
+export const SERVICE_DATE_RE = /^\d{4}-\d{2}-\d{2}$/
+
 export interface OrderWindowConfig {
-  openHour: number   // hour ordering becomes available (0-23)
-  closeHour: number  // hour ordering closes (0-23)
-  deliveryHour: number // hour food is delivered (0-23)
+  /** Hour (0-23) on the PREVIOUS calendar day after which ordering closes. */
+  cutoffHour: number
+  /** Hour (0-23) the food is ready for pickup on the delivery day. */
+  pickupHour: number
 }
 
-function getBangkokParts(date: Date): { hour: number; year: number; month: number; day: number } {
-  const fmt = new Intl.DateTimeFormat('en', {
-    timeZone: TZ,
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    hourCycle: 'h23',
-  })
-  const parts = fmt.formatToParts(date)
-  const get = (type: string) => parseInt(parts.find((p) => p.type === type)!.value)
-  return { year: get('year'), month: get('month'), day: get('day'), hour: get('hour') }
+function pad2(n: number): string {
+  return String(n).padStart(2, '0')
 }
 
-/**
- * Returns the service Date for an order placed at `now`, or null if ordering
- * is currently closed.
- *
- * When openHour > closeHour the window wraps midnight:
- *   e.g. openHour=17, closeHour=10 → open 17:00–10:00 the next morning.
- *   - Order at 18:00 Mon → service Tuesday at deliveryHour
- *   - Order at 09:00 Tue → service Tuesday at deliveryHour
- */
-export function getServiceDate(window: OrderWindowConfig, now: Date = new Date()): Date | null {
-  const { hour, year, month, day } = getBangkokParts(now)
-  const { openHour, closeHour, deliveryHour } = window
+export function isValidServiceDateStr(s: string): boolean {
+  if (!SERVICE_DATE_RE.test(s)) return false
+  const [y, m, d] = s.split('-').map(Number)
+  const dt = new Date(Date.UTC(y, m - 1, d))
+  return (
+    dt.getUTCFullYear() === y &&
+    dt.getUTCMonth() === m - 1 &&
+    dt.getUTCDate() === d
+  )
+}
 
-  let isOpen: boolean
-  let daysAhead = 0
+export function bangkokDateStr(now: Date = new Date()): string {
+  return new Intl.DateTimeFormat('en-CA', { timeZone: TZ }).format(now)
+}
 
-  if (openHour > closeHour) {
-    // Window wraps midnight
-    if (hour >= openHour) {
-      isOpen = true
-      daysAhead = 1 // delivery is the next calendar day
-    } else if (hour < closeHour) {
-      isOpen = true
-      daysAhead = 0 // delivery is today
-    } else {
-      isOpen = false
-    }
-  } else {
-    isOpen = hour >= openHour && hour < closeHour
-    daysAhead = 0
+export function bangkokWeekday(dateStr: string): number {
+  const d = new Date(`${dateStr}T12:00:00+07:00`)
+  const wd = new Intl.DateTimeFormat('en-US', { timeZone: TZ, weekday: 'short' }).format(d)
+  const map: Record<string, number> = {
+    Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6,
   }
+  return map[wd] ?? 0
+}
 
-  if (!isOpen) return null
+export function addDaysToDateStr(dateStr: string, days: number): string {
+  const [y, m, d] = dateStr.split('-').map(Number)
+  const dt = new Date(Date.UTC(y, m - 1, d + days))
+  const yy = dt.getUTCFullYear()
+  const mm = String(dt.getUTCMonth() + 1).padStart(2, '0')
+  const dd = String(dt.getUTCDate()).padStart(2, '0')
+  return `${yy}-${mm}-${dd}`
+}
 
-  // Compute the target calendar day
-  const base = new Date(Date.UTC(year, month - 1, day))
-  base.setUTCDate(base.getUTCDate() + daysAhead)
-  const sy = base.getUTCFullYear()
-  const sm = String(base.getUTCMonth() + 1).padStart(2, '0')
-  const sd = String(base.getUTCDate()).padStart(2, '0')
-  const sh = String(deliveryHour).padStart(2, '0')
+export function serviceDateToDate(dateStr: string, pickupHour: number): Date {
+  return new Date(`${dateStr}T${pad2(pickupHour)}:00:00+07:00`)
+}
 
-  // Bangkok is UTC+7
-  return new Date(`${sy}-${sm}-${sd}T${sh}:00:00+07:00`)
+export function isServingDay(servingDays: number[], dateStr: string): boolean {
+  const days = servingDays.length > 0 ? servingDays : DEFAULT_SERVING_DAYS
+  return days.includes(bangkokWeekday(dateStr))
 }
 
 /**
- * Returns a human-readable status label for use in the UI banner.
+ * The moment ordering closes for `serviceDateStr`: `cutoffHour` on the
+ * previous calendar day (Bangkok time). E.g. cutoffHour=18 → orders for
+ * Wednesday close at 18:00 on Tuesday.
  */
-export function getWindowStatus(
+export function getCutoffAt(window: OrderWindowConfig, serviceDateStr: string): Date {
+  const prev = addDaysToDateStr(serviceDateStr, -1)
+  const [py, pm, pd] = prev.split('-').map(Number)
+  return new Date(`${py}-${pad2(pm)}-${pad2(pd)}T${pad2(window.cutoffHour)}:00:00+07:00`)
+}
+
+/**
+ * Ordering for a delivery day is open until `cutoffHour` on the day before.
+ * This naturally excludes today and any past day.
+ */
+export function isOrderableForDate(
+  window: OrderWindowConfig,
+  serviceDateStr: string,
+  now: Date = new Date(),
+): boolean {
+  if (!isValidServiceDateStr(serviceDateStr)) return false
+  return now < getCutoffAt(window, serviceDateStr)
+}
+
+export function isToday(dateStr: string, now: Date = new Date()): boolean {
+  return dateStr === bangkokDateStr(now)
+}
+
+/** Upcoming YYYY-MM-DD strings the customer can pre-order for (excludes today). */
+export function listEligibleServiceDates(
+  servingDays: number[],
+  window: OrderWindowConfig,
+  horizonDays = 14,
+  now: Date = new Date(),
+): string[] {
+  const today = bangkokDateStr(now)
+  const out: string[] = []
+  for (let i = 1; i <= horizonDays; i++) {
+    const dateStr = addDaysToDateStr(today, i)
+    if (isServingDay(servingDays, dateStr) && isOrderableForDate(window, dateStr, now)) {
+      out.push(dateStr)
+    }
+  }
+  return out
+}
+
+export function defaultSelectedServiceDate(
+  servingDays: number[],
   window: OrderWindowConfig,
   now: Date = new Date(),
-): { isOpen: boolean; label: string } {
-  const { hour, day: _day, month: _month, year: _year } = getBangkokParts(now)
-  const mins = now.getMinutes()
-  const { openHour, closeHour } = window
+): string | null {
+  const eligible = listEligibleServiceDates(servingDays, window, 14, now)
+  return eligible[0] ?? null
+}
 
-  let isOpen: boolean
-  let minutesUntil: number
-
-  if (openHour > closeHour) {
-    if (hour >= openHour) {
-      isOpen = true
-      minutesUntil = (24 - hour + closeHour) * 60 - mins
-    } else if (hour < closeHour) {
-      isOpen = true
-      minutesUntil = (closeHour - hour) * 60 - mins
-    } else {
-      isOpen = false
-      minutesUntil = (openHour - hour) * 60 - mins
+/**
+ * Returns the soonest upcoming delivery day still open for ordering at `now`
+ * (as a Date at the pickup hour), or null if none within the horizon.
+ */
+export function getServiceDate(window: OrderWindowConfig, now: Date = new Date()): Date | null {
+  const today = bangkokDateStr(now)
+  for (let i = 1; i <= 14; i++) {
+    const dateStr = addDaysToDateStr(today, i)
+    if (isOrderableForDate(window, dateStr, now)) {
+      return serviceDateToDate(dateStr, window.pickupHour)
     }
-  } else {
-    isOpen = hour >= openHour && hour < closeHour
-    minutesUntil = isOpen ? (closeHour - hour) * 60 - mins : (openHour - hour + 24) * 60 % (24 * 60) - mins
-    if (minutesUntil <= 0) minutesUntil += 24 * 60
   }
-
-  const h = Math.floor(Math.abs(minutesUntil) / 60)
-  const m = Math.abs(minutesUntil) % 60
-  const timeLabel = h > 0 ? `${h}h ${m}m` : `${m}m`
-
-  return {
-    isOpen,
-    label: isOpen ? `Closes in ${timeLabel}` : `Opens in ${timeLabel}`,
-  }
+  return null
 }

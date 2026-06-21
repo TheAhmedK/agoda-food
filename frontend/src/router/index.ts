@@ -16,6 +16,7 @@ import MerchantMenu from '../pages/MerchantMenu.vue'
 import MerchantCategories from '../pages/MerchantCategories.vue'
 import MerchantOrders from '../pages/MerchantOrders.vue'
 import HelpPage from '../pages/HelpPage.vue'
+import BatchSuccessPage from '../pages/BatchSuccessPage.vue'
 
 export const router = createRouter({
   history: createWebHistory(),
@@ -26,6 +27,7 @@ export const router = createRouter({
     { path: '/cart', component: CartPage },
     { path: '/checkout', component: CheckoutPage, meta: { requiresAuth: true } },
     { path: '/order/:id', component: OrderSuccessPage, meta: { requiresAuth: true } },
+    { path: '/batch/:id', component: BatchSuccessPage, meta: { requiresAuth: true } },
     { path: '/login', component: LoginPage },
     { path: '/auth/line/callback', component: LineCallbackPage },
     { path: '/onboarding', component: OnboardingPage },

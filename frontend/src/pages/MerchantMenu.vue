@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, reactive } from 'vue'
+import { ref, computed, onMounted, onUnmounted, reactive } from 'vue'
 import AppHeader from '../components/AppHeader.vue'
 import MerchantTabs from '../components/MerchantTabs.vue'
 import ConfirmModal from '../components/ConfirmModal.vue'
@@ -11,7 +11,8 @@ import {
   deleteMerchantMenuItem,
   uploadMerchantImage,
 } from '../services/api'
-import type { MenuItem } from '../data/types'
+import type { MenuItem, MenuItemTag } from '../data/types'
+import { MENU_ITEM_TAGS, TAG_STYLES } from '../lib/menuItemTags'
 
 const menuItems = ref<MenuItem[]>([])
 const categories = ref<string[]>([])
@@ -29,8 +30,11 @@ const form = reactive({
   imageKey: '',
   imageUrl: '',   // preview-only, not sent to the API
   category: '',
+  tags: [] as MenuItemTag[],
   isAvailable: true,
 })
+const tagDropdownOpen = ref(false)
+const tagDropdownRef = ref<HTMLElement | null>(null)
 const formError = ref<string | null>(null)
 const saving = ref(false)
 const photoUploading = ref(false)
@@ -45,7 +49,36 @@ const deleteTitle = computed(() =>
 )
 
 onMounted(async () => {
+  document.addEventListener('click', onDocumentClick)
   await Promise.all([loadMenuItems(), loadCategories()])
+})
+
+onUnmounted(() => {
+  document.removeEventListener('click', onDocumentClick)
+})
+
+function onDocumentClick(event: MouseEvent) {
+  if (!tagDropdownRef.value?.contains(event.target as Node)) {
+    tagDropdownOpen.value = false
+  }
+}
+
+function toggleTag(tag: MenuItemTag) {
+  const idx = form.tags.indexOf(tag)
+  if (idx === -1) {
+    form.tags.push(tag)
+  } else {
+    form.tags.splice(idx, 1)
+  }
+}
+
+function isTagSelected(tag: MenuItemTag) {
+  return form.tags.includes(tag)
+}
+
+const tagSummary = computed(() => {
+  if (form.tags.length === 0) return 'Select tags…'
+  return form.tags.map((t) => TAG_STYLES[t].label).join(', ')
 })
 
 async function loadMenuItems() {
@@ -68,10 +101,11 @@ async function loadCategories() {
 }
 
 function openAdd() {
-  Object.assign(form, { name: '', description: '', price: 0, imageKey: '', imageUrl: '', category: '', isAvailable: true })
+  Object.assign(form, { name: '', description: '', price: 0, imageKey: '', imageUrl: '', category: '', tags: [], isAvailable: true })
   editingMenuItem.value = null
   formError.value = null
   photoError.value = null
+  tagDropdownOpen.value = false
   mode.value = 'add'
 }
 
@@ -83,11 +117,13 @@ function openEdit(menuItem: MenuItem) {
     imageKey: menuItem.imageKey ?? '',
     imageUrl: menuItem.imageUrl ?? '',
     category: menuItem.category ?? '',
+    tags: [...menuItem.tags],
     isAvailable: menuItem.isAvailable ?? true,
   })
   editingMenuItem.value = menuItem
   formError.value = null
   photoError.value = null
+  tagDropdownOpen.value = false
   mode.value = 'edit'
 }
 
@@ -133,6 +169,7 @@ async function saveForm() {
       price: form.price,
       imageKey: form.imageKey || undefined,
       category: form.category || '',
+      tags: [...form.tags],
       isAvailable: form.isAvailable,
     }
     if (mode.value === 'add') {
@@ -217,6 +254,56 @@ async function confirmDelete() {
               <p v-if="categories.length === 0" class="text-xs text-gray-400 mt-1">
                 No categories yet. Add some on the Categories tab.
               </p>
+            </div>
+          </div>
+          <div ref="tagDropdownRef" class="relative">
+            <label class="block text-sm font-medium text-gray-700 mb-1.5">Tags</label>
+            <button
+              type="button"
+              @click.stop="tagDropdownOpen = !tagDropdownOpen"
+              class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm bg-white text-left flex items-center justify-between gap-2 focus:outline-none focus:ring-2 focus:ring-brand-300"
+            >
+              <span class="truncate" :class="form.tags.length ? 'text-gray-900' : 'text-gray-400'">
+                {{ tagSummary }}
+              </span>
+              <span class="text-gray-400 shrink-0">{{ tagDropdownOpen ? '▲' : '▼' }}</span>
+            </button>
+
+            <div
+              v-if="tagDropdownOpen"
+              class="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-xl shadow-lg py-1"
+            >
+              <button
+                v-for="tag in MENU_ITEM_TAGS"
+                :key="tag"
+                type="button"
+                @click="toggleTag(tag)"
+                class="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-gray-50 text-left"
+              >
+                <span
+                  class="w-4 h-4 rounded border flex items-center justify-center shrink-0"
+                  :class="isTagSelected(tag) ? 'bg-brand-500 border-brand-500 text-white' : 'border-gray-300'"
+                >
+                  <span v-if="isTagSelected(tag)" class="text-xs leading-none">✓</span>
+                </span>
+                <span
+                  class="text-xs font-semibold px-2 py-0.5 rounded-full"
+                  :class="TAG_STYLES[tag].classes"
+                >
+                  {{ TAG_STYLES[tag].label }}
+                </span>
+              </button>
+            </div>
+
+            <div v-if="form.tags.length" class="flex flex-wrap gap-1 mt-2">
+              <span
+                v-for="tag in form.tags"
+                :key="tag"
+                class="text-xs font-semibold px-2 py-0.5 rounded-full"
+                :class="TAG_STYLES[tag].classes"
+              >
+                {{ TAG_STYLES[tag].label }}
+              </span>
             </div>
           </div>
           <div>

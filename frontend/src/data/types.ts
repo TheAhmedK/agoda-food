@@ -2,9 +2,10 @@ export const MENU_ITEM_TAGS = ['Popular', 'Vegetarian', 'Vegan', 'Spicy', 'Glute
 export type MenuItemTag = (typeof MENU_ITEM_TAGS)[number]
 
 export interface OrderWindow {
-  openHour: number
-  closeHour: number
-  deliveryHour: number
+  /** Hour (0-23) on the previous day after which ordering closes. */
+  cutoffHour: number
+  /** Hour (0-23) food is ready for pickup on the delivery day. */
+  pickupHour: number
 }
 
 export interface MenuItem {
@@ -26,7 +27,6 @@ export interface Restaurant {
   cuisine: string
   rating: number
   reviewCount: number
-  deliveryTime: string
   deliveryFee: number
   minOrder: number
   imageUrl: string
@@ -37,6 +37,8 @@ export interface Restaurant {
   status?: 'draft' | 'active' | 'suspended'
   ownerUserId: string
   orderWindow?: OrderWindow
+  /** Weekdays served. 0=Sun … 6=Sat */
+  servingDays?: number[]
   referral?: { name: string; email: string; verifiedAt?: string }
   /** Whether the merchant has uploaded a PromptPay QR (presence-only flag for UIs). */
   hasPromptPay?: boolean
@@ -52,6 +54,8 @@ export interface CartItem {
   restaurantName: string
   quantity: number
   note: string
+  /** The single delivery day this line is for. Same item on another day is a separate line. */
+  serviceDate: string
 }
 
 export interface OrderItem {
@@ -106,6 +110,21 @@ export interface PromptPayQR {
   paymentStatus: PaymentStatus
   proofStatus?: PaymentProofStatus
   proofUploadedAt?: string
+  batchId?: string
+  grandTotal?: number
+  orderIds?: string[]
+}
+
+export interface OrderBatch {
+  id: string
+  userId: string
+  restaurantId: string
+  orderIds: string[]
+  grandTotal: number
+  status: OrderStatus
+  paymentProof?: PaymentProof
+  orders: Order[]
+  createdAt: string
 }
 
 export interface PaymentProof {
@@ -149,6 +168,7 @@ export interface Order {
   paymentStatus?: PaymentStatus
   paymentProof?: PaymentProof
   serviceDate?: string
+  batchId?: string
   createdAt: string
   customer?: OrderCustomer
 }
