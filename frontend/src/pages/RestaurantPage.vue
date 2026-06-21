@@ -3,6 +3,8 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AppHeader from '../components/AppHeader.vue'
 import MenuItemCard from '../components/MenuItemCard.vue'
+import SpecialDishBanner from '../components/SpecialDishBanner.vue'
+import { isSpecialDishDeliveryPast } from '../lib/specialDish'
 import { fetchRestaurantWithMenu } from '../services/api'
 import { useCartStore } from '../stores/cart'
 import { useSelectedDayStore } from '../stores/selectedDay'
@@ -10,8 +12,10 @@ import {
   formatServiceDateLong,
   deliveryTimeLabel,
   isOrderableForDate,
+  isServingDay,
   cutoffLabel,
   defaultOrderWindow,
+  DEFAULT_SERVING_DAYS,
 } from '../lib/serviceDates'
 import type { MenuItem, RestaurantWithMenu } from '../data/types'
 
@@ -46,9 +50,13 @@ function dismissSwitchModal() {
 }
 
 function confirmSwitchRestaurant() {
-  if (!windowIsOpen.value || !pendingAdd.value) return
+  if (!pendingAdd.value) return
   const { menuItem, restaurantId, restaurantName } = pendingAdd.value
-  cart.addItem(menuItem, restaurantId, restaurantName, selectedDay.serviceDate)
+  const serviceDate = menuItem.isSpecialDish && menuItem.availability
+    ? menuItem.availability.deliveryDate
+    : selectedDay.serviceDate
+  if (!menuItem.isSpecialDish && !regularOrderingEnabled.value) return
+  cart.addItem(menuItem, restaurantId, restaurantName, serviceDate)
   dismissSwitchModal()
 }
 
@@ -68,7 +76,7 @@ const categories = computed<string[]>(() => {
   if (!restaurant.value) return []
   const named = new Set<string>()
   let hasUncategorized = false
-  for (const mi of restaurant.value.menu) {
+  for (const mi of regularMenu.value) {
     if (mi.category) named.add(mi.category)
     else hasUncategorized = true
   }
@@ -84,20 +92,45 @@ function categoryLabel(c: string): string {
 function itemsByCategory(category: string) {
   if (!restaurant.value) return []
   if (category === UNCATEGORIZED) {
-    return restaurant.value.menu.filter((mi) => !mi.category)
+    return regularMenu.value.filter((mi) => !mi.category)
   }
-  return restaurant.value.menu.filter((mi) => mi.category === category)
+  return regularMenu.value.filter((mi) => mi.category === category)
 }
 
 const orderWindow = computed(() => restaurant.value?.orderWindow ?? defaultOrderWindow())
 const pickupTimeLabel = computed(() => deliveryTimeLabel(orderWindow.value))
+const isServingSelectedDay = computed(() =>
+  restaurant.value
+    ? isServingDay(
+        restaurant.value.servingDays ?? DEFAULT_SERVING_DAYS,
+        selectedDay.serviceDate,
+      )
+    : true,
+)
 const windowIsOpen = computed(() =>
   isOrderableForDate(orderWindow.value, selectedDay.serviceDate),
 )
-const windowLabel = computed(() =>
-  windowIsOpen.value
+const regularOrderingEnabled = computed(
+  () => isServingSelectedDay.value && windowIsOpen.value,
+)
+const windowLabel = computed(() => {
+  if (!isServingSelectedDay.value) return 'Not serving this day'
+  return windowIsOpen.value
     ? `Order by ${cutoffLabel(orderWindow.value, selectedDay.serviceDate)}`
-    : 'Ordering for this day has closed',
+    : 'Ordering for this day has closed'
+})
+
+const specialDishes = computed(() =>
+  (restaurant.value?.menu ?? []).filter(
+    (mi) =>
+      mi.isSpecialDish &&
+      mi.availability &&
+      !isSpecialDishDeliveryPast(mi.availability),
+  ),
+)
+
+const regularMenu = computed(() =>
+  (restaurant.value?.menu ?? []).filter((mi) => !mi.isSpecialDish),
 )
 </script>
 
@@ -170,11 +203,11 @@ const windowLabel = computed(() =>
       <div
         v-if="restaurant.orderWindow"
         class="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium"
-        :class="windowIsOpen
+        :class="regularOrderingEnabled
           ? 'bg-green-50 text-green-700 border border-green-200'
           : 'bg-amber-50 text-amber-700 border border-amber-200'"
       >
-        <span>{{ windowIsOpen ? '🟢' : '🔴' }}</span>
+        <span>{{ regularOrderingEnabled ? '🟢' : '🔴' }}</span>
         <span>{{ windowLabel }}</span>
       </div>
     </div>
@@ -194,6 +227,22 @@ const windowLabel = computed(() =>
       class="max-w-2xl mx-auto px-4 py-6 space-y-8"
       :class="{ 'pb-28': cart.totalItems > 0 && cart.activeRestaurantId === restaurant.id }"
     >
+      <section v-if="specialDishes.length > 0" class="space-y-3">
+        <h2 class="font-bold text-gray-900 text-base flex items-center gap-2">
+          <span class="w-1 h-5 bg-brand-600 rounded-full inline-block"></span>
+          Special pre-orders
+        </h2>
+        <SpecialDishBanner
+          v-for="menuItem in specialDishes"
+          :key="menuItem.id"
+          :menu-item="menuItem"
+          :restaurant-id="restaurant.id"
+          :restaurant-name="restaurant.name"
+          :order-window="orderWindow"
+          @request-switch-restaurant="onSwitchRequest"
+        />
+      </section>
+
       <section v-for="category in categories" :key="category">
         <h2 class="font-bold text-gray-900 text-base mb-3 flex items-center gap-2">
           <span class="w-1 h-5 bg-brand-700 rounded-full inline-block"></span>
@@ -206,7 +255,7 @@ const windowLabel = computed(() =>
             :menu-item="menuItem"
             :restaurant-id="restaurant.id"
             :restaurant-name="restaurant.name"
-            :ordering-enabled="windowIsOpen"
+            :ordering-enabled="regularOrderingEnabled"
             :class="{ 'col-span-2': !menuItem.imageUrl }"
             @request-switch-restaurant="onSwitchRequest"
           />

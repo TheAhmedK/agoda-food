@@ -8,6 +8,12 @@ export interface OrderWindow {
   pickupHour: number
 }
 
+export interface SpecialDishAvailability {
+  deliveryDate: string
+  orderOpens: string
+  orderCloses: string
+}
+
 export interface MenuItem {
   id: string
   restaurantId: string
@@ -19,6 +25,8 @@ export interface MenuItem {
   category?: string
   tags: MenuItemTag[]
   isAvailable?: boolean
+  isSpecialDish?: boolean
+  availability?: SpecialDishAvailability | null
 }
 
 export interface Restaurant {

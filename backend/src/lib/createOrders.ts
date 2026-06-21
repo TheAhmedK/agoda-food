@@ -10,6 +10,10 @@ import {
   isToday,
   serviceDateToDate,
 } from '@lib/orderWindow'
+import {
+  isSpecialDishOrderable,
+  type SpecialDishAvailability,
+} from '@lib/specialDish'
 import { getPublicStorage } from '@lib/storage'
 
 export interface OrderItemInput {
@@ -32,6 +36,9 @@ export interface BatchValidationError {
 async function resolveItems(
   restaurantId: Types.ObjectId,
   items: OrderItemInput[],
+  serviceDate: string,
+  restaurant: IRestaurant,
+  now: Date,
 ): Promise<IOrderItem[] | BatchValidationError> {
   const menuItemIds = items.map((i) => i.menuItemId)
   const menuItems = await MenuItem.find({
@@ -46,7 +53,7 @@ async function resolveItems(
     const menuItem = menuItemMap.get(input.menuItemId)
     if (!menuItem) {
       return {
-        error: `Menu item ${input.menuItemId} not available for this restaurant`,
+        error: `This menu item is not available for this restaurant. Please clear your cart and start a new order.`,
       }
     }
     if (!Number.isInteger(input.quantity) || input.quantity < 1) {
@@ -54,6 +61,28 @@ async function resolveItems(
         error: `Quantity must be a positive integer for ${menuItem.name}`,
       }
     }
+
+    if (menuItem.isSpecialDish) {
+      const availability = menuItem.availability as SpecialDishAvailability | null
+      if (!availability) {
+        return { serviceDate, error: `${menuItem.name} is not configured for pre-order` }
+      }
+      if (serviceDate !== availability.deliveryDate) {
+        return {
+          serviceDate,
+          error: `${menuItem.name} can only be ordered for ${availability.deliveryDate}`,
+          code: 'SPECIAL_DISH_DATE_MISMATCH',
+        }
+      }
+      if (!isSpecialDishOrderable(availability, restaurant.orderWindow, now)) {
+        return {
+          serviceDate,
+          error: `Pre-ordering for ${menuItem.name} is closed`,
+          code: 'SPECIAL_DISH_CLOSED',
+        }
+      }
+    }
+
     resolvedItems.push({
       menuItemId: menuItem._id,
       name: menuItem.name,
@@ -68,12 +97,12 @@ async function resolveItems(
   return resolvedItems
 }
 
-function validateDay(
+async function validateDay(
   restaurant: IRestaurant,
   serviceDate: string,
   items: OrderItemInput[],
   now: Date,
-): BatchValidationError | null {
+): Promise<BatchValidationError | null> {
   if (!isValidServiceDateStr(serviceDate)) {
     return { serviceDate, error: 'serviceDate must be YYYY-MM-DD' }
   }
@@ -84,23 +113,36 @@ function validateDay(
       code: 'SAME_DAY_NOT_ALLOWED',
     }
   }
-  if (!isServingDay(restaurant.servingDays, serviceDate)) {
-    return {
-      serviceDate,
-      error: `${restaurant.name} is not serving on this day`,
-      code: 'NOT_SERVING_DAY',
-    }
-  }
-  if (!isOrderableForDate(restaurant.orderWindow, serviceDate, now)) {
-    return {
-      serviceDate,
-      error: `Ordering for ${serviceDate} is closed`,
-      code: 'ORDER_WINDOW_CLOSED',
-    }
-  }
   if (!Array.isArray(items) || items.length === 0) {
     return { serviceDate, error: 'At least one item is required per day' }
   }
+
+  const menuItemIds = items.map((i) => i.menuItemId)
+  const menuItems = await MenuItem.find({
+    _id: { $in: menuItemIds },
+    restaurantId: restaurant._id,
+    isAvailable: true,
+  })
+  const menuItemMap = new Map(menuItems.map((m) => [m._id.toString(), m]))
+  const hasRegular = items.some((i) => !menuItemMap.get(i.menuItemId)?.isSpecialDish)
+
+  if (hasRegular) {
+    if (!isServingDay(restaurant.servingDays, serviceDate)) {
+      return {
+        serviceDate,
+        error: `${restaurant.name} is not serving on this day`,
+        code: 'NOT_SERVING_DAY',
+      }
+    }
+    if (!isOrderableForDate(restaurant.orderWindow, serviceDate, now)) {
+      return {
+        serviceDate,
+        error: `Ordering for ${serviceDate} is closed`,
+        code: 'ORDER_WINDOW_CLOSED',
+      }
+    }
+  }
+
   return null
 }
 
@@ -140,13 +182,19 @@ export async function createOrderBatch(params: {
   const prepared: { serviceDate: string; items: IOrderItem[]; subtotal: number; total: number }[] = []
 
   for (const day of days) {
-    const dayErr = validateDay(restaurant, day.serviceDate, day.items, now)
+    const dayErr = await validateDay(restaurant, day.serviceDate, day.items, now)
     if (dayErr) {
       errors.push(dayErr)
       continue
     }
 
-    const resolved = await resolveItems(restaurant._id, day.items)
+    const resolved = await resolveItems(
+      restaurant._id,
+      day.items,
+      day.serviceDate,
+      restaurant,
+      now,
+    )
     if (!Array.isArray(resolved)) {
       errors.push({ serviceDate: day.serviceDate, error: resolved.error, code: resolved.code })
       continue

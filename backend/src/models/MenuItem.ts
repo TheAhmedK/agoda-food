@@ -3,6 +3,12 @@ import { Schema, model, Document, Types } from 'mongoose'
 export const MENU_ITEM_TAGS = ['Popular', 'Vegetarian', 'Vegan', 'Spicy', 'GlutenFree'] as const
 export type MenuItemTag = (typeof MENU_ITEM_TAGS)[number]
 
+export interface ISpecialDishAvailability {
+  deliveryDate: string
+  orderOpens: string
+  orderCloses: string
+}
+
 export interface IMenuItem extends Document {
   restaurantId: Types.ObjectId
   name: string
@@ -12,6 +18,9 @@ export interface IMenuItem extends Document {
   category?: string
   tags: MenuItemTag[]
   isAvailable: boolean
+  isSpecialDish: boolean
+  /** Pre-order window for promotional dishes; null for regular menu items. */
+  availability: ISpecialDishAvailability | null
   createdAt: Date
   updatedAt: Date
 }
@@ -33,6 +42,15 @@ const MenuItemSchema = new Schema<IMenuItem>(
       default: [],
     },
     isAvailable: { type: Boolean, default: true },
+    isSpecialDish: { type: Boolean, default: false },
+    availability: {
+      type: {
+        deliveryDate: { type: String, required: true },
+        orderOpens: { type: String, required: true },
+        orderCloses: { type: String, required: true },
+      },
+      default: null,
+    },
   },
   { timestamps: true },
 )

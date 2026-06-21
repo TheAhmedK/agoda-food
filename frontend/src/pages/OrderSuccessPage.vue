@@ -305,7 +305,7 @@ const STATUS_BADGE: Record<string, { label: string; class: string }> = {
             {{ order.status === 'cancelled' ? 'Payment was rejected' : 'Previous payment was rejected' }}
           </p>
           <p v-if="order.paymentProof?.reviewerNote">
-            <span class="text-red-500">Reason from restaurant:</span> "{{ order.paymentProof.reviewerNote }}"
+            <span class="text-brand-600">Reason from restaurant:</span> "{{ order.paymentProof.reviewerNote }}"
           </p>
           <p v-else-if="order.status === 'cancelled'">
             The restaurant couldn't verify the screenshot you uploaded.

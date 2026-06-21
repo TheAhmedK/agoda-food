@@ -39,7 +39,7 @@ function select(dateStr: string) {
 
 <template>
   <div class="mb-5">
-    <p class="text-brand-50 text-xs font-medium uppercase tracking-wide">
+    <p class="text-brand-50 text-xs text-center uppercase tracking-wide">
       <strong>Order lunch for</strong>
     </p>
     <p class="text-lg font-bold text-center mb-3">

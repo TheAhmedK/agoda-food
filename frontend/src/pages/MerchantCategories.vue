@@ -200,7 +200,7 @@ async function confirmDelete() {
             <button
               @click="requestDelete(name)"
               :disabled="deletingName === name"
-              class="text-red-500 text-xs font-medium hover:underline disabled:opacity-60"
+              class="text-brand-600 text-xs font-medium hover:underline disabled:opacity-60"
             >
               {{ deletingName === name ? 'Deleting…' : 'Delete' }}
             </button>

@@ -19,6 +19,7 @@ import {
 } from "@lib/promptPay";
 import { getPrivateStorage, getPublicStorage } from "@lib/storage";
 import { imageUpload } from "@lib/upload";
+import { validateSpecialAvailabilityInput } from "@lib/specialDish";
 
 /**
  * Retention window for payment-proof files after their lifecycle terminates
@@ -127,12 +128,24 @@ router.post("/menu-items", async (req: Request, res: Response) => {
       return;
     }
 
-    const { name, description, price, imageKey, category, tags } = req.body;
+    const { name, description, price, imageKey, category, tags, isSpecialDish, availability } =
+      req.body;
     if (!name || !description || price === undefined) {
       res
         .status(400)
         .json({ error: "name, description, and price are required" });
       return;
+    }
+
+    const special = Boolean(isSpecialDish);
+    let resolvedAvailability = null;
+    if (special) {
+      const parsed = validateSpecialAvailabilityInput(availability);
+      if (!parsed.ok) {
+        res.status(400).json({ error: parsed.error });
+        return;
+      }
+      resolvedAvailability = parsed.value;
     }
 
     const cleanCategory = typeof category === "string" ? category.trim() : "";
@@ -152,6 +165,8 @@ router.post("/menu-items", async (req: Request, res: Response) => {
       category: cleanCategory,
       tags: tags ?? [],
       isAvailable: true,
+      isSpecialDish: special,
+      availability: resolvedAvailability,
     });
     res.status(201).json(serializeMenuItem(menuItem));
   } catch (err) {
@@ -191,6 +206,27 @@ router.patch("/menu-items/:menuItemId", async (req: Request, res: Response) => {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (menuItem as any)[key] = req.body[key];
       }
+    }
+
+    if (req.body.isSpecialDish !== undefined) {
+      const special = Boolean(req.body.isSpecialDish);
+      menuItem.isSpecialDish = special;
+      if (!special) {
+        menuItem.availability = null;
+      }
+    }
+
+    if (menuItem.isSpecialDish) {
+      const rawAvailability =
+        req.body.availability !== undefined
+          ? req.body.availability
+          : menuItem.availability;
+      const parsed = validateSpecialAvailabilityInput(rawAvailability);
+      if (!parsed.ok) {
+        res.status(400).json({ error: parsed.error });
+        return;
+      }
+      menuItem.availability = parsed.value;
     }
 
     if (req.body.category !== undefined) {

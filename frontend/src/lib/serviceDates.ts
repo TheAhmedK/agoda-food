@@ -5,7 +5,7 @@ const TZ = 'Asia/Bangkok'
 export const DEFAULT_SERVING_DAYS = [1, 2, 3, 4, 5]
 export const SERVICE_DATE_HORIZON = 14
 /** How many upcoming weekdays the homepage day picker shows. */
-export const PICKER_WEEKDAY_COUNT = 5
+export const PICKER_WEEKDAY_COUNT = 10
 
 export const WEEKDAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] as const
 
