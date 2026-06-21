@@ -171,7 +171,7 @@ function backToCart() {
         <div class="w-full space-y-3">
           <button
             @click="payWithPromptPay"
-            :disabled="isPaying || (orderTotals && !orderTotals.meetsMinOrder)"
+            :disabled="isPaying || (orderTotals != null && !orderTotals.meetsMinOrder)"
             class="w-full bg-brand-500 disabled:opacity-60 text-white rounded-2xl py-4 font-bold text-base shadow-lg"
           >
             {{ isPaying ? 'Processing…' : `Place order · ฿${draft.total}` }}
