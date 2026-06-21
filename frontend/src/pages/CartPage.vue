@@ -265,7 +265,7 @@ async function verifyOtpCode() {
 
         <!-- One section per delivery day; the selected day comes first. -->
         <div
-          v-for="(date, index) in orderedDates"
+          v-for="(date) in orderedDates"
           :key="date"
           class="bg-white rounded-2xl border border-gray-100 shadow-sm mb-4 overflow-hidden"
         >
