@@ -13,13 +13,14 @@ const props = withDefaults(
   { available: true, unavailableLabel: 'Closed' },
 )
 
-const dimmed = computed(() => !props.restaurant.isOpen || !props.available)
+const isClosed = computed(() => !props.restaurant.isOpen)
+const showOverlay = computed(() => isClosed.value || !props.available)
 </script>
 
 <template>
   <div
     class="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 transition-transform"
-    :class="dimmed
+    :class="isClosed
       ? 'opacity-60 cursor-not-allowed'
       : 'active:scale-[0.98] cursor-pointer'"
   >
@@ -29,9 +30,9 @@ const dimmed = computed(() => !props.restaurant.isOpen || !props.available)
         :alt="restaurant.name"
         class="w-full h-full object-cover"
       />
-      <div v-if="dimmed" class="absolute inset-0 bg-black/40 flex items-center justify-center">
+      <div v-if="showOverlay" class="absolute inset-0 bg-black/40 flex items-center justify-center">
         <span class="bg-white text-gray-700 text-sm font-semibold px-3 py-1 rounded-full">
-          {{ !restaurant.isOpen ? 'Closed' : unavailableLabel }}
+          {{ isClosed ? 'Closed' : unavailableLabel }}
         </span>
       </div>
       <div v-if="restaurant.deliveryFee === 0" class="absolute top-3 left-3">

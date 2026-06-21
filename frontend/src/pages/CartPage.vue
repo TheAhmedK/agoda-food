@@ -14,8 +14,9 @@ import {
   DEFAULT_SERVING_DAYS,
   isOrderableForDate,
 } from '../lib/serviceDates'
+import { isSpecialDishOrderable } from '../lib/specialDish'
 import { computeOrderTotals } from '../lib/orderTotals'
-import type { RestaurantWithMenu } from '../data/types'
+import type { RestaurantWithMenu, CartItem } from '../data/types'
 
 const router = useRouter()
 const cart = useCartStore()
@@ -75,7 +76,7 @@ const orderTotals = computed(() =>
 )
 
 const closedDatesInCart = computed(() =>
-  cart.datesInCart.filter((d) => !isOrderableForDate(orderWindow.value, d)),
+  cart.datesInCart.filter((d) => isDateClosed(d)),
 )
 
 const hasClosedDates = computed(() => closedDatesInCart.value.length > 0)
@@ -95,7 +96,30 @@ function isDateBelowMinOrder(date: string) {
 }
 
 function isDateClosed(date: string) {
-  return !isOrderableForDate(orderWindow.value, date)
+  const dayItems = cart.itemsForDate(date)
+  const regularItems = dayItems.filter((i) => !i.menuItem.isSpecialDish)
+  const specialItems = dayItems.filter((i) => i.menuItem.isSpecialDish)
+
+  if (regularItems.length > 0 && !isOrderableForDate(orderWindow.value, date)) {
+    return true
+  }
+
+  for (const item of specialItems) {
+    const availability = item.menuItem.availability
+    if (!availability || !isSpecialDishOrderable(availability, orderWindow.value)) {
+      return true
+    }
+  }
+
+  return false
+}
+
+function isItemDateClosed(item: CartItem, date: string) {
+  if (item.menuItem.isSpecialDish) {
+    const availability = item.menuItem.availability
+    return !availability || !isSpecialDishOrderable(availability, orderWindow.value)
+  }
+  return isDateClosed(date)
 }
 
 function removeClosedDates() {
@@ -321,6 +345,7 @@ async function verifyOtpCode() {
                   class="mt-2 w-full text-xs border border-gray-200 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-brand-300 text-gray-600"
                 />
                 <ServiceDateChips
+                  v-if="!item.menuItem.isSpecialDish"
                   :active-dates="cart.datesForMenuItem(item.menuItem.id)"
                   :serving-days="restaurant?.servingDays ?? DEFAULT_SERVING_DAYS"
                   @toggle="cart.toggleItemDate(item.menuItem.id, $event)"
@@ -338,7 +363,7 @@ async function verifyOtpCode() {
                   <span class="text-sm font-bold w-4 text-center text-brand-600">{{ item.quantity }}</span>
                   <button
                     @click="cart.addItem(item.menuItem, item.restaurantId, item.restaurantName, date)"
-                    :disabled="isDateClosed(date)"
+                    :disabled="isItemDateClosed(item, date)"
                     class="w-7 h-7 rounded-full bg-brand-700 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center font-bold text-white text-sm"
                   >
                     +

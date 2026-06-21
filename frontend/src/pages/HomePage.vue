@@ -118,7 +118,7 @@ const servingCount = computed(() => filtered.value.filter(serves).length)
           <div
             v-for="restaurant in filtered"
             :key="restaurant.id"
-            @click="restaurant.isOpen && serves(restaurant) && router.push(`/restaurant/${restaurant.id}`)"
+            @click="restaurant.isOpen && router.push(`/restaurant/${restaurant.id}`)"
           >
             <RestaurantCard
               :restaurant="restaurant"

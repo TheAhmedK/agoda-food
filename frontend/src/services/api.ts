@@ -94,6 +94,18 @@ function toMenuItem(d: Record<string, unknown>): MenuItem {
     (MENU_ITEM_TAGS as readonly string[]).includes(t),
   );
   const rawCategory = typeof d.category === "string" ? d.category : "";
+  const rawAvailability = d.availability as Record<string, string> | null | undefined;
+  const availability =
+    rawAvailability &&
+    typeof rawAvailability.deliveryDate === "string" &&
+    typeof rawAvailability.orderOpens === "string" &&
+    typeof rawAvailability.orderCloses === "string"
+      ? {
+          deliveryDate: rawAvailability.deliveryDate,
+          orderOpens: rawAvailability.orderOpens,
+          orderCloses: rawAvailability.orderCloses,
+        }
+      : null;
   return {
     id: d._id as string,
     restaurantId: d.restaurantId as string,
@@ -105,6 +117,8 @@ function toMenuItem(d: Record<string, unknown>): MenuItem {
     category: rawCategory || undefined,
     tags,
     isAvailable: (d.isAvailable as boolean | undefined) ?? true,
+    isSpecialDish: Boolean(d.isSpecialDish),
+    availability,
   };
 }
 

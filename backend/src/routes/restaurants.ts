@@ -6,6 +6,7 @@ import { generateOtp, verifyOtp } from '@lib/otp'
 import { getPublicStorage } from '@lib/storage'
 import { config } from '@config/AppConfig'
 import { isValidServiceDateStr } from '@lib/orderWindow'
+import { isSpecialDishDeliveryPast } from '@lib/specialDish'
 
 const router = Router()
 
@@ -68,7 +69,13 @@ router.get('/:id/menu', async (req: Request, res: Response) => {
       restaurantId: req.params.id,
       isAvailable: true,
     }).sort({ category: 1, createdAt: 1 })
-    const serialized = menuItems.map((item) => {
+    const visible = menuItems.filter((item) => {
+      if (item.isSpecialDish && item.availability) {
+        return !isSpecialDishDeliveryPast(item.availability)
+      }
+      return true
+    })
+    const serialized = visible.map((item) => {
       const obj = item.toObject() as unknown as Record<string, unknown>
       obj.imageUrl = obj.imageKey
         ? getPublicStorage().publicUrl(obj.imageKey as string)

@@ -32,6 +32,10 @@ const form = reactive({
   category: '',
   tags: [] as MenuItemTag[],
   isAvailable: true,
+  isSpecialDish: false,
+  deliveryDate: '',
+  orderOpens: '',
+  orderCloses: '',
 })
 const tagDropdownOpen = ref(false)
 const tagDropdownRef = ref<HTMLElement | null>(null)
@@ -101,7 +105,11 @@ async function loadCategories() {
 }
 
 function openAdd() {
-  Object.assign(form, { name: '', description: '', price: 0, imageKey: '', imageUrl: '', category: '', tags: [], isAvailable: true })
+  Object.assign(form, {
+    name: '', description: '', price: 0, imageKey: '', imageUrl: '', category: '',
+    tags: [], isAvailable: true, isSpecialDish: false,
+    deliveryDate: '', orderOpens: '', orderCloses: '',
+  })
   editingMenuItem.value = null
   formError.value = null
   photoError.value = null
@@ -119,6 +127,10 @@ function openEdit(menuItem: MenuItem) {
     category: menuItem.category ?? '',
     tags: [...menuItem.tags],
     isAvailable: menuItem.isAvailable ?? true,
+    isSpecialDish: menuItem.isSpecialDish ?? false,
+    deliveryDate: menuItem.availability?.deliveryDate ?? '',
+    orderOpens: menuItem.availability?.orderOpens ?? '',
+    orderCloses: menuItem.availability?.orderCloses ?? '',
   })
   editingMenuItem.value = menuItem
   formError.value = null
@@ -160,10 +172,33 @@ async function saveForm() {
     formError.value = 'Name and description are required'
     return
   }
+  if (form.isSpecialDish) {
+    if (!form.deliveryDate) {
+      formError.value = 'Delivery date is required for special dishes'
+      return
+    }
+    if (!form.orderOpens) {
+      formError.value = 'Order opens is required for special dishes'
+      return
+    }
+    if (!form.orderCloses) {
+      formError.value = 'Order closes is required for special dishes'
+      return
+    }
+    const { deliveryDate, orderOpens, orderCloses } = form
+    if (orderOpens >= deliveryDate || orderCloses >= deliveryDate) {
+      formError.value = 'Order opens and order closes must be before the delivery date'
+      return
+    }
+    if (orderOpens >= orderCloses) {
+      formError.value = 'Order opens must be before order closes'
+      return
+    }
+  }
   saving.value = true
   formError.value = null
   try {
-    const payload = {
+    const payload: Record<string, unknown> = {
       name: form.name,
       description: form.description,
       price: form.price,
@@ -171,6 +206,16 @@ async function saveForm() {
       category: form.category || '',
       tags: [...form.tags],
       isAvailable: form.isAvailable,
+      isSpecialDish: form.isSpecialDish,
+    }
+    if (form.isSpecialDish) {
+      payload.availability = {
+        deliveryDate: form.deliveryDate,
+        orderOpens: form.orderOpens,
+        orderCloses: form.orderCloses,
+      }
+    } else {
+      payload.availability = null
     }
     if (mode.value === 'add') {
       await createMerchantMenuItem(payload)
@@ -336,7 +381,7 @@ async function confirmDelete() {
                   v-if="form.imageUrl"
                   type="button"
                   @click="removePhoto"
-                  class="text-xs text-red-500 font-medium hover:underline text-left"
+                  class="text-xs text-brand-600 font-medium hover:underline text-left"
                 >
                   Remove
                 </button>
@@ -346,6 +391,52 @@ async function confirmDelete() {
             <p v-if="photoError" class="text-xs text-red-600 mt-2">⚠️ {{ photoError }}</p>
             <p v-else class="text-xs text-gray-400 mt-2">JPEG, PNG, WebP or HEIC. We resize and re-encode for you.</p>
           </div>
+          <div class="flex items-center justify-between py-2">
+            <div>
+              <span class="text-sm font-medium text-gray-700">Special dish</span>
+              <p class="text-xs text-gray-400 mt-0.5">Promotional pre-order for a specific delivery day</p>
+            </div>
+            <button type="button" @click="form.isSpecialDish = !form.isSpecialDish"
+              class="relative inline-flex h-6 w-11 rounded-full transition-colors"
+              :class="form.isSpecialDish ? 'bg-amber-500' : 'bg-gray-200'">
+              <span class="inline-block w-5 h-5 rounded-full bg-white shadow transform transition-transform mt-0.5"
+                :class="form.isSpecialDish ? 'translate-x-5' : 'translate-x-1'" />
+            </button>
+          </div>
+
+          <div v-if="form.isSpecialDish" class="space-y-3 p-4 bg-amber-50 border border-amber-100 rounded-xl">
+            <p class="text-xs font-semibold text-amber-800 uppercase tracking-wide">Pre-order availability</p>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1.5">Delivery date *</label>
+              <input
+                v-model="form.deliveryDate"
+                type="date"
+                required
+                class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-amber-300"
+              />
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1.5">Order opens *</label>
+                <input
+                  v-model="form.orderOpens"
+                  type="date"
+                  required
+                  class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-amber-300"
+                />
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1.5">Order closes *</label>
+                <input
+                  v-model="form.orderCloses"
+                  type="date"
+                  required
+                  class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-amber-300"
+                />
+              </div>
+            </div>
+          </div>
+
           <div class="flex items-center justify-between py-2">
             <span class="text-sm font-medium text-gray-700">Available to order</span>
             <button type="button" @click="form.isAvailable = !form.isAvailable"
@@ -396,17 +487,25 @@ async function confirmDelete() {
               <p class="text-xs text-gray-400">
                 {{ menuItem.category || 'Uncategorized' }} · ฿{{ menuItem.price }}
               </p>
-              <span
-                class="text-xs px-2 py-0.5 rounded-full font-medium"
-                :class="menuItem.isAvailable ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'"
-              >
-                {{ menuItem.isAvailable ? 'Available' : 'Unavailable' }}
-              </span>
+              <div class="flex flex-wrap gap-1 mt-1">
+                <span
+                  v-if="menuItem.isSpecialDish"
+                  class="text-xs px-2 py-0.5 rounded-full font-medium bg-amber-100 text-amber-800"
+                >
+                  Special dish
+                </span>
+                <span
+                  class="text-xs px-2 py-0.5 rounded-full font-medium"
+                  :class="menuItem.isAvailable ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'"
+                >
+                  {{ menuItem.isAvailable ? 'Available' : 'Unavailable' }}
+                </span>
+              </div>
             </div>
 
             <div class="flex flex-col gap-1.5 shrink-0">
-              <button @click="openEdit(menuItem)" class="text-brand-500 text-xs font-medium hover:underline">Edit</button>
-              <button @click="requestDelete(menuItem)" class="text-red-500 text-xs font-medium hover:underline">Delete</button>
+              <button @click="openEdit(menuItem)" class="text-brand-700 text-xs font-medium hover:underline">Edit</button>
+              <button @click="requestDelete(menuItem)" class="text-brand-600 text-xs font-medium hover:underline">Delete</button>
             </div>
           </div>
         </div>
