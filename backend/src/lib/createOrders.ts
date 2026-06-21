@@ -7,6 +7,7 @@ import {
   isValidServiceDateStr,
   isServingDay,
   isOrderableForDate,
+  isToday,
   serviceDateToDate,
 } from '@lib/orderWindow'
 import { getPublicStorage } from '@lib/storage'
@@ -75,6 +76,13 @@ function validateDay(
 ): BatchValidationError | null {
   if (!isValidServiceDateStr(serviceDate)) {
     return { serviceDate, error: 'serviceDate must be YYYY-MM-DD' }
+  }
+  if (isToday(serviceDate, now)) {
+    return {
+      serviceDate,
+      error: 'Same-day orders are not available. Please choose a future date.',
+      code: 'SAME_DAY_NOT_ALLOWED',
+    }
   }
   if (!isServingDay(restaurant.servingDays, serviceDate)) {
     return {
@@ -186,7 +194,7 @@ export async function createOrderBatch(params: {
   for (const day of prepared) {
     const serviceDate = serviceDateToDate(
       day.serviceDate,
-      restaurant.orderWindow.deliveryHour ?? 12,
+      restaurant.orderWindow.pickupHour ?? 12,
     )
     const order = await Order.create({
       userId,

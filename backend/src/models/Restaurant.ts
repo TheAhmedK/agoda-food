@@ -3,9 +3,10 @@ import { Schema, model, Document, Types } from 'mongoose'
 export type RestaurantStatus = 'draft' | 'active' | 'suspended'
 
 export interface IOrderWindow {
-  openHour: number
-  closeHour: number
-  deliveryHour: number
+  /** Hour (0-23) on the previous day after which ordering closes. */
+  cutoffHour: number
+  /** Hour (0-23) food is ready for pickup on the delivery day. */
+  pickupHour: number
 }
 
 export interface IReferral {
@@ -45,9 +46,8 @@ export interface IRestaurant extends Document {
 
 const OrderWindowSchema = new Schema<IOrderWindow>(
   {
-    openHour: { type: Number, default: 17, min: 0, max: 23 },
-    closeHour: { type: Number, default: 10, min: 0, max: 23 },
-    deliveryHour: { type: Number, default: 12, min: 0, max: 23 },
+    cutoffHour: { type: Number, default: 18, min: 0, max: 23 },
+    pickupHour: { type: Number, default: 12, min: 0, max: 23 },
   },
   { _id: false },
 )

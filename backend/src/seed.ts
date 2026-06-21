@@ -20,9 +20,8 @@ interface SeedMenuItem {
 }
 
 interface SeedOrderWindow {
-  openHour: number
-  closeHour: number
-  deliveryHour: number
+  cutoffHour: number
+  pickupHour: number
 }
 
 interface SeedRestaurant {
@@ -39,6 +38,7 @@ interface SeedRestaurant {
   isOpen: boolean
   status: 'active' | 'draft' | 'suspended'
   orderWindow: SeedOrderWindow
+  servingDays: number[]
   menuItems: SeedMenuItem[]
 }
 
@@ -56,7 +56,7 @@ const seedData: SeedRestaurant[] = [
     tags: ['Isaan', 'Spicy', 'Popular'],
     isOpen: true,
     status: 'active',
-    orderWindow: { openHour: 17, closeHour: 10, deliveryHour: 12 },
+    orderWindow: { cutoffHour: 18, pickupHour: 12 },
     servingDays: [1, 2, 3, 4, 5],
     menuItems: [
       {
@@ -114,7 +114,7 @@ const seedData: SeedRestaurant[] = [
     tags: ['Hot Pot', 'Sharing', 'Premium'],
     isOpen: true,
     status: 'active',
-    orderWindow: { openHour: 17, closeHour: 10, deliveryHour: 12 },
+    orderWindow: { cutoffHour: 18, pickupHour: 12 },
     servingDays: [1, 2, 3, 4, 5],
     menuItems: [
       {
@@ -163,7 +163,7 @@ const seedData: SeedRestaurant[] = [
     tags: ['Street Food', 'Michelin', 'Seafood'],
     isOpen: true,
     status: 'active',
-    orderWindow: { openHour: 17, closeHour: 10, deliveryHour: 12 },
+    orderWindow: { cutoffHour: 18, pickupHour: 12 },
     servingDays: [1, 2, 3, 4, 5],
     menuItems: [
       {
@@ -212,7 +212,7 @@ const seedData: SeedRestaurant[] = [
     tags: ['Pizza', 'Western', 'Family'],
     isOpen: false,
     status: 'active',
-    orderWindow: { openHour: 17, closeHour: 10, deliveryHour: 12 },
+    orderWindow: { cutoffHour: 18, pickupHour: 12 },
     servingDays: [1, 2, 3, 4, 5],
     menuItems: [
       {

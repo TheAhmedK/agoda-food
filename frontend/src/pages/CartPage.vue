@@ -5,34 +5,37 @@ import AppHeader from '../components/AppHeader.vue'
 import ServiceDateChips from '../components/ServiceDateChips.vue'
 import { useCartStore } from '../stores/cart'
 import { useUserStore } from '../stores/user'
+import { useSelectedDayStore } from '../stores/selectedDay'
 import { sendOtp, verifyOtp, fetchRestaurantWithMenu } from '../services/api'
 import { saveDraft } from '../services/checkoutDraft'
 import {
-  expandCartToBatchDays,
-  formatServiceDateLabel,
-  lineTotal,
+  formatServiceDateLong,
   defaultOrderWindow,
   DEFAULT_SERVING_DAYS,
+  isOrderableForDate,
 } from '../lib/serviceDates'
 import type { RestaurantWithMenu } from '../data/types'
 
 const router = useRouter()
 const cart = useCartStore()
 const user = useUserStore()
+const selectedDay = useSelectedDayStore()
 
 const restaurant = ref<RestaurantWithMenu | null>(null)
 const isPlacing = ref(false)
 const orderError = ref<string | null>(null)
 
-const lunchCount = computed(() => expandCartToBatchDays(cart.items).length)
+const lunchCount = computed(() => cart.datesInCart.length)
 
-const daySummaries = computed(() =>
-  expandCartToBatchDays(cart.items).map((day) => ({
-    serviceDate: day.serviceDate,
-    label: formatServiceDateLabel(day.serviceDate),
-    subtotal: day.items.reduce((s, i) => s + i.price * i.quantity, 0),
-  })),
-)
+// Date sections, with the day the user is shopping for pinned first.
+const orderedDates = computed(() => {
+  const dates = [...cart.datesInCart]
+  const sel = selectedDay.serviceDate
+  if (dates.includes(sel)) {
+    return [sel, ...dates.filter((d) => d !== sel)]
+  }
+  return dates
+})
 
 onMounted(async () => {
   if (!cart.activeRestaurantId) return
@@ -52,8 +55,31 @@ const otpSending = ref(false)
 const otpVerifying = ref(false)
 const otpError = ref<string | null>(null)
 
+const orderWindow = computed(() => restaurant.value?.orderWindow ?? defaultOrderWindow())
+
+const closedDatesInCart = computed(() =>
+  cart.datesInCart.filter((d) => !isOrderableForDate(orderWindow.value, d)),
+)
+
+const hasClosedDates = computed(() => closedDatesInCart.value.length > 0)
+
+function isDateClosed(date: string) {
+  return !isOrderableForDate(orderWindow.value, date)
+}
+
+function removeClosedDates() {
+  for (const date of closedDatesInCart.value) {
+    cart.clearDate(date)
+  }
+  orderError.value = null
+}
+
 function proceedToCheckout() {
   if (cart.items.length === 0 || !cart.activeRestaurantId) return
+  if (hasClosedDates.value) {
+    orderError.value = 'Some days in your cart have passed their order cut-off. Remove them to continue.'
+    return
+  }
   saveDraft({
     restaurantId: cart.activeRestaurantId,
     restaurantName: cart.items[0]!.restaurantName,
@@ -70,6 +96,10 @@ function proceedToCheckout() {
 
 function submitOrder() {
   if (cart.items.length === 0 || !cart.activeRestaurantId) return
+  if (hasClosedDates.value) {
+    orderError.value = 'Some days in your cart have passed their order cut-off. Remove them to continue.'
+    return
+  }
 
   if (!user.isLoggedIn) {
     router.push({ path: '/login', query: { redirect: '/cart' } })
@@ -176,76 +206,116 @@ async function verifyOtpCode() {
           </div>
         </div>
 
-        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm divide-y divide-gray-100 mb-4">
-          <div
-            v-for="item in cart.items"
-            :key="item.menuItem.id"
-            class="px-4 py-4 flex items-start gap-3"
+        <div
+          v-if="hasClosedDates"
+          class="bg-amber-50 border border-amber-200 text-amber-800 text-sm rounded-xl px-4 py-3 mb-4"
+        >
+          <p class="font-medium mb-1">Some days have passed their cut-off</p>
+          <p class="text-xs text-amber-700 mb-2">
+            Orders close at {{ String(orderWindow.cutoffHour).padStart(2, '0') }}:00 the day before delivery.
+          </p>
+          <button
+            type="button"
+            @click="removeClosedDates"
+            class="text-xs font-semibold text-amber-900 underline"
           >
-            <img
-              v-if="item.menuItem.imageUrl"
-              :src="item.menuItem.imageUrl"
-              :alt="item.menuItem.name"
-              class="w-16 h-16 rounded-xl object-cover shrink-0"
-            />
-            <div
-              v-else
-              class="w-16 h-16 rounded-xl bg-gray-100 shrink-0 flex items-center justify-center text-2xl"
+            Remove closed days from cart
+          </button>
+        </div>
+
+        <!-- One section per delivery day; the selected day comes first. -->
+        <div
+          v-for="(date, index) in orderedDates"
+          :key="date"
+          class="bg-white rounded-2xl border border-gray-100 shadow-sm mb-4 overflow-hidden"
+        >
+          <div
+            class="flex items-center justify-between px-4 py-3 border-b"
+            :class="isDateClosed(date)
+              ? 'bg-amber-50 border-amber-100'
+              : 'bg-brand-50 border-brand-100'"
+          >
+            <div class="flex items-center gap-2">
+              <span>📅</span>
+              <span
+                class="font-semibold text-sm"
+                :class="isDateClosed(date) ? 'text-amber-800' : 'text-brand-800'"
+              >
+                {{ formatServiceDateLong(date) }}
+              </span>
+              <span
+                v-if="isDateClosed(date)"
+                class="text-[10px] uppercase tracking-wide font-semibold text-amber-700 bg-white border border-amber-200 rounded-full px-2 py-0.5"
+              >
+                Closed
+              </span>
+            </div>
+            <span
+              v-if="index === 0"
+              class="text-[10px] uppercase tracking-wide font-semibold text-brand-600 bg-white border border-brand-200 rounded-full px-2 py-0.5"
             >
-              🍽️
-            </div>
-            <div class="flex-1 min-w-0">
-              <p class="font-semibold text-gray-900 text-sm">{{ item.menuItem.name }}</p>
-              <p class="text-gray-400 text-xs mt-0.5">×{{ item.quantity }} per day</p>
-              <input
-                :value="item.note"
-                @input="cart.setNote(item.menuItem.id, ($event.target as HTMLInputElement).value)"
-                type="text"
-                placeholder="Add a note (optional)"
-                class="mt-2 w-full text-xs border border-gray-200 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-brand-300 text-gray-600"
+              Selected day
+            </span>
+          </div>
+
+          <div class="divide-y divide-gray-100">
+            <div
+              v-for="item in cart.itemsForDate(date)"
+              :key="`${date}-${item.menuItem.id}`"
+              class="px-4 py-4 flex items-start gap-3"
+            >
+              <img
+                v-if="item.menuItem.imageUrl"
+                :src="item.menuItem.imageUrl"
+                :alt="item.menuItem.name"
+                class="w-16 h-16 rounded-xl object-cover shrink-0"
               />
-              <ServiceDateChips
-                :selected-dates="item.serviceDates"
-                :serving-days="restaurant?.servingDays ?? DEFAULT_SERVING_DAYS"
-                :order-window="restaurant?.orderWindow ?? defaultOrderWindow()"
-                @toggle="cart.toggleServiceDate(item.menuItem.id, $event)"
-              />
-            </div>
-            <div class="shrink-0 flex flex-col items-end gap-2">
-              <p class="font-bold text-gray-900 text-sm">
-                ฿{{ lineTotal(item.menuItem.price, item.quantity, item.serviceDates.length) }}
-              </p>
-              <div class="flex items-center gap-2">
-                <button
-                  @click="cart.removeItem(item.menuItem.id)"
-                  class="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center font-bold text-gray-600 text-sm"
-                >
-                  −
-                </button>
-                <span class="text-sm font-bold w-4 text-center text-brand-600">{{ item.quantity }}</span>
-                <button
-                  @click="cart.addItem(item.menuItem, item.restaurantId, item.restaurantName, item.serviceDates[0]!)"
-                  class="w-7 h-7 rounded-full bg-brand-500 flex items-center justify-center font-bold text-white text-sm"
-                >
-                  +
-                </button>
+              <div
+                v-else
+                class="w-16 h-16 rounded-xl bg-gray-100 shrink-0 flex items-center justify-center text-2xl"
+              >
+                🍽️
+              </div>
+              <div class="flex-1 min-w-0">
+                <p class="font-semibold text-gray-900 text-sm">{{ item.menuItem.name }}</p>
+                <input
+                  :value="item.note"
+                  @input="cart.setNote(item.menuItem.id, date, ($event.target as HTMLInputElement).value)"
+                  type="text"
+                  placeholder="Add a note (optional)"
+                  class="mt-2 w-full text-xs border border-gray-200 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-brand-300 text-gray-600"
+                />
+                <ServiceDateChips
+                  :active-dates="cart.datesForMenuItem(item.menuItem.id)"
+                  :serving-days="restaurant?.servingDays ?? DEFAULT_SERVING_DAYS"
+                  @toggle="cart.toggleItemDate(item.menuItem.id, $event)"
+                />
+              </div>
+              <div class="shrink-0 flex flex-col items-end gap-2">
+                <p class="font-bold text-gray-900 text-sm">฿{{ item.menuItem.price * item.quantity }}</p>
+                <div class="flex items-center gap-2">
+                  <button
+                    @click="cart.removeItem(item.menuItem.id, date)"
+                    class="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center font-bold text-gray-600 text-sm"
+                  >
+                    −
+                  </button>
+                  <span class="text-sm font-bold w-4 text-center text-brand-600">{{ item.quantity }}</span>
+                  <button
+                    @click="cart.addItem(item.menuItem, item.restaurantId, item.restaurantName, date)"
+                    :disabled="isDateClosed(date)"
+                    class="w-7 h-7 rounded-full bg-brand-500 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center font-bold text-white text-sm"
+                  >
+                    +
+                  </button>
+                </div>
               </div>
             </div>
           </div>
-        </div>
 
-        <div
-          v-if="daySummaries.length > 1"
-          class="bg-white rounded-2xl border border-gray-100 shadow-sm px-4 py-4 mb-4 space-y-2"
-        >
-          <p class="text-xs font-medium text-gray-400 uppercase tracking-wide">By day</p>
-          <div
-            v-for="day in daySummaries"
-            :key="day.serviceDate"
-            class="flex justify-between text-sm text-gray-600"
-          >
-            <span>{{ day.label }}</span>
-            <span>฿{{ day.subtotal }}</span>
+          <div class="flex justify-between px-4 py-3 text-sm border-t border-gray-100 bg-gray-50">
+            <span class="text-gray-500">Day subtotal</span>
+            <span class="font-semibold text-gray-900">฿{{ cart.subtotalForDate(date) }}</span>
           </div>
         </div>
 
@@ -266,7 +336,7 @@ async function verifyOtpCode() {
 
         <button
           @click="submitOrder"
-          :disabled="isPlacing"
+          :disabled="isPlacing || hasClosedDates"
           class="w-full bg-brand-500 disabled:opacity-60 text-white rounded-2xl py-4 font-bold text-base shadow-lg"
         >
           Checkout · {{ lunchCount }} lunch{{ lunchCount > 1 ? 'es' : '' }} · ฿{{ cart.subtotal }}

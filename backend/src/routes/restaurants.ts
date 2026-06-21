@@ -5,10 +5,7 @@ import { requireUser } from '@middleware/auth'
 import { generateOtp, verifyOtp } from '@lib/otp'
 import { getPublicStorage } from '@lib/storage'
 import { config } from '@config/AppConfig'
-import {
-  isValidServiceDateStr,
-  isServingDay,
-} from '@lib/orderWindow'
+import { isValidServiceDateStr } from '@lib/orderWindow'
 
 const router = Router()
 
@@ -39,11 +36,10 @@ router.get('/', async (req: Request, res: Response) => {
       ? { $or: [{ status: 'active' }, { ownerUserId: callerId }] }
       : { status: 'active' }
 
-    let restaurants = await Restaurant.find(filter).sort({ createdAt: 1 })
-
-    if (serviceDate) {
-      restaurants = restaurants.filter((r) => isServingDay(r.servingDays, serviceDate))
-    }
+    // Return all restaurants regardless of serviceDate; the client renders
+    // ones that don't serve the selected day as "closed" rather than hiding
+    // them, so the list stays stable as the customer flips between days.
+    const restaurants = await Restaurant.find(filter).sort({ createdAt: 1 })
 
     res.json(restaurants)
   } catch (err) {
@@ -251,7 +247,7 @@ router.post(
           email: referralEmail,
           verifiedAt: new Date(),
         },
-        orderWindow: { openHour: 17, closeHour: 10, deliveryHour: 12 },
+        orderWindow: { cutoffHour: 18, pickupHour: 12 },
         servingDays: [1, 2, 3, 4, 5],
       })
 

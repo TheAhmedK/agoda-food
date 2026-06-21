@@ -37,9 +37,8 @@ const form = reactive({
   deliveryTime: '',
   deliveryFee: 0,
   minOrder: 0,
-  openHour: 17,
-  closeHour: 10,
-  deliveryHour: 12,
+  cutoffHour: 18,
+  pickupHour: 12,
   servingDays: [1, 2, 3, 4, 5] as number[],
 })
 
@@ -71,9 +70,8 @@ onMounted(async () => {
     form.deliveryTime = r.deliveryTime
     form.deliveryFee = r.deliveryFee
     form.minOrder = r.minOrder
-    form.openHour = r.orderWindow?.openHour ?? 17
-    form.closeHour = r.orderWindow?.closeHour ?? 10
-    form.deliveryHour = r.orderWindow?.deliveryHour ?? 12
+    form.cutoffHour = r.orderWindow?.cutoffHour ?? 18
+    form.pickupHour = r.orderWindow?.pickupHour ?? 12
     form.servingDays = r.servingDays?.length ? [...r.servingDays] : [1, 2, 3, 4, 5]
 
     const qr = await fetchMerchantPromptPayQr()
@@ -195,9 +193,8 @@ async function save() {
       deliveryFee: form.deliveryFee,
       minOrder: form.minOrder,
       orderWindow: {
-        openHour: form.openHour,
-        closeHour: form.closeHour,
-        deliveryHour: form.deliveryHour,
+        cutoffHour: form.cutoffHour,
+        pickupHour: form.pickupHour,
       },
       servingDays: [...form.servingDays].sort((a, b) => a - b),
     } as Partial<Restaurant>)
@@ -308,22 +305,19 @@ function toggleServingDay(day: number) {
           </div>
 
           <div class="border-t border-gray-100 pt-4">
-            <h3 class="font-semibold text-gray-800 mb-1 text-sm">Order window (Asia/Bangkok)</h3>
+            <h3 class="font-semibold text-gray-800 mb-1 text-sm">Order cut-off & pickup (Asia/Bangkok)</h3>
             <p class="text-xs text-gray-400 mb-3">
-              When openHour &gt; closeHour the window wraps midnight (e.g. 17:00 – 10:00 the next morning).
+              Orders for a day close at the cut-off hour the <strong>previous</strong> day
+              (e.g. 18 → orders for Wednesday close at 18:00 Tuesday).
             </p>
-            <div class="grid grid-cols-3 gap-3">
+            <div class="grid grid-cols-2 gap-3">
               <div>
-                <label class="block text-xs font-medium text-gray-600 mb-1">Opens at (hour)</label>
-                <input v-model.number="form.openHour" type="number" min="0" max="23" class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-300" />
+                <label class="block text-xs font-medium text-gray-600 mb-1">Cut-off hour (day before)</label>
+                <input v-model.number="form.cutoffHour" type="number" min="0" max="23" class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-300" />
               </div>
               <div>
-                <label class="block text-xs font-medium text-gray-600 mb-1">Closes at (hour)</label>
-                <input v-model.number="form.closeHour" type="number" min="0" max="23" class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-300" />
-              </div>
-              <div>
-                <label class="block text-xs font-medium text-gray-600 mb-1">Delivery at (hour)</label>
-                <input v-model.number="form.deliveryHour" type="number" min="0" max="23" class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-300" />
+                <label class="block text-xs font-medium text-gray-600 mb-1">Pickup hour</label>
+                <input v-model.number="form.pickupHour" type="number" min="0" max="23" class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-300" />
               </div>
             </div>
           </div>

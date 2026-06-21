@@ -5,9 +5,14 @@ import AppHeader from '../components/AppHeader.vue'
 import MenuItemCard from '../components/MenuItemCard.vue'
 import { fetchRestaurantWithMenu } from '../services/api'
 import { useCartStore } from '../stores/cart'
-import { useOrderWindow } from '../composables/useOrderWindow'
 import { useSelectedDayStore } from '../stores/selectedDay'
-import { formatServiceDateLong } from '../lib/serviceDates'
+import {
+  formatServiceDateLong,
+  deliveryTimeLabel,
+  isOrderableForDate,
+  cutoffLabel,
+  defaultOrderWindow,
+} from '../lib/serviceDates'
 import type { MenuItem, RestaurantWithMenu } from '../data/types'
 
 const route = useRoute()
@@ -41,7 +46,7 @@ function dismissSwitchModal() {
 }
 
 function confirmSwitchRestaurant() {
-  if (!pendingAdd.value) return
+  if (!windowIsOpen.value || !pendingAdd.value) return
   const { menuItem, restaurantId, restaurantName } = pendingAdd.value
   cart.addItem(menuItem, restaurantId, restaurantName, selectedDay.serviceDate)
   dismissSwitchModal()
@@ -84,12 +89,15 @@ function itemsByCategory(category: string) {
   return restaurant.value.menu.filter((mi) => mi.category === category)
 }
 
-const orderWindow = computed(() => restaurant.value?.orderWindow)
-const { isOpen: windowIsOpen, label: windowLabel, deliveryTimeLabel } = useOrderWindow(
-  // Pass a reactive getter — the composable reads the value each tick
-  { get openHour() { return orderWindow.value?.openHour ?? 17 },
-    get closeHour() { return orderWindow.value?.closeHour ?? 10 },
-    get deliveryHour() { return orderWindow.value?.deliveryHour ?? 12 } }
+const orderWindow = computed(() => restaurant.value?.orderWindow ?? defaultOrderWindow())
+const pickupTimeLabel = computed(() => deliveryTimeLabel(orderWindow.value))
+const windowIsOpen = computed(() =>
+  isOrderableForDate(orderWindow.value, selectedDay.serviceDate),
+)
+const windowLabel = computed(() =>
+  windowIsOpen.value
+    ? `Order by ${cutoffLabel(orderWindow.value, selectedDay.serviceDate)}`
+    : 'Ordering for this day has closed',
 )
 </script>
 
@@ -159,7 +167,7 @@ const { isOpen: windowIsOpen, label: windowLabel, deliveryTimeLabel } = useOrder
       <div class="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium bg-brand-50 text-brand-800 border border-brand-200">
         <span>📅</span>
         <span>Ordering for {{ formatServiceDateLong(selectedDay.serviceDate) }}</span>
-        <span class="ml-auto text-xs opacity-70">Pickup {{ deliveryTimeLabel }}</span>
+        <span class="ml-auto text-xs opacity-70">Pickup {{ pickupTimeLabel }}</span>
       </div>
       <div
         v-if="restaurant.orderWindow"
@@ -200,6 +208,7 @@ const { isOpen: windowIsOpen, label: windowLabel, deliveryTimeLabel } = useOrder
             :menu-item="menuItem"
             :restaurant-id="restaurant.id"
             :restaurant-name="restaurant.name"
+            :ordering-enabled="windowIsOpen"
             :class="{ 'col-span-2': !menuItem.imageUrl }"
             @request-switch-restaurant="onSwitchRequest"
           />

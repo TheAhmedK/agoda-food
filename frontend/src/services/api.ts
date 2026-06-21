@@ -128,9 +128,8 @@ function toRestaurant(r: Record<string, unknown>): Restaurant {
     ownerUserId: r.ownerUserId as string,
     orderWindow: ow
       ? {
-          openHour: ow.openHour,
-          closeHour: ow.closeHour,
-          deliveryHour: ow.deliveryHour,
+          cutoffHour: ow.cutoffHour,
+          pickupHour: ow.pickupHour,
         }
       : undefined,
     servingDays: Array.isArray(r.servingDays) ? (r.servingDays as number[]) : undefined,

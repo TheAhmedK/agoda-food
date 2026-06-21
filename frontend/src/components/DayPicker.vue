@@ -1,11 +1,9 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, watch } from 'vue'
 import {
-  addDaysToDateStr,
-  bangkokDateStr,
   formatServiceDateLabel,
   formatServiceDateLong,
-  SERVICE_DATE_HORIZON,
+  listNextWeekdays,
 } from '../lib/serviceDates'
 
 const props = defineProps<{
@@ -16,13 +14,23 @@ const emit = defineEmits<{
   'update:modelValue': [dateStr: string]
 }>()
 
-const dayOptions = computed(() => {
-  const today = bangkokDateStr()
-  return Array.from({ length: SERVICE_DATE_HORIZON }, (_, i) => {
-    const dateStr = addDaysToDateStr(today, i)
-    return { dateStr, label: formatServiceDateLabel(dateStr) }
-  })
-})
+const dayOptions = computed(() =>
+  listNextWeekdays().map((dateStr) => ({
+    dateStr,
+    label: formatServiceDateLabel(dateStr),
+  })),
+)
+
+watch(
+  dayOptions,
+  (opts) => {
+    if (opts.length === 0) return
+    if (!opts.some((o) => o.dateStr === props.modelValue)) {
+      emit('update:modelValue', opts[0]!.dateStr)
+    }
+  },
+  { immediate: true },
+)
 
 const selectedIndex = computed(() =>
   dayOptions.value.findIndex((d) => d.dateStr === props.modelValue),

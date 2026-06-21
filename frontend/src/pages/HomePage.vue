@@ -1,11 +1,16 @@
 <script setup lang="ts">
-import { ref, computed, watch, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import AppHeader from '../components/AppHeader.vue'
 import DayPicker from '../components/DayPicker.vue'
 import RestaurantCard from '../components/RestaurantCard.vue'
 import { fetchRestaurants } from '../services/api'
 import { useSelectedDayStore } from '../stores/selectedDay'
+import {
+  isServingDay,
+  DEFAULT_SERVING_DAYS,
+  formatServiceDateLabel,
+} from '../lib/serviceDates'
 import type { Restaurant } from '../data/types'
 
 const router = useRouter()
@@ -29,18 +34,28 @@ async function loadRestaurants() {
 }
 
 onMounted(loadRestaurants)
-watch(() => selectedDay.serviceDate, loadRestaurants)
+
+function serves(r: Restaurant): boolean {
+  return isServingDay(r.servingDays ?? DEFAULT_SERVING_DAYS, selectedDay.serviceDate)
+}
 
 const filtered = computed(() => {
   const q = search.value.toLowerCase().trim()
-  if (!q) return restaurants.value
-  return restaurants.value.filter(
-    (r) =>
-      r.name.toLowerCase().includes(q) ||
-      r.cuisine.toLowerCase().includes(q) ||
-      r.tags.some((t) => t.toLowerCase().includes(q)),
+  const matches = q
+    ? restaurants.value.filter(
+        (r) =>
+          r.name.toLowerCase().includes(q) ||
+          r.cuisine.toLowerCase().includes(q) ||
+          r.tags.some((t) => t.toLowerCase().includes(q)),
+      )
+    : restaurants.value
+  // Serving restaurants first, closed-for-this-day ones after.
+  return [...matches].sort(
+    (a, b) => Number(serves(b)) - Number(serves(a)),
   )
 })
+
+const servingCount = computed(() => filtered.value.filter(serves).length)
 </script>
 
 <template>
@@ -86,23 +101,27 @@ const filtered = computed(() => {
       <template v-else>
         <div class="flex items-center justify-between mb-4">
           <h2 class="font-bold text-gray-900 text-lg">
-            {{ filtered.length }} serving this day
+            {{ servingCount }} serving on {{ formatServiceDateLabel(selectedDay.serviceDate) }}
           </h2>
         </div>
 
         <div v-if="filtered.length === 0" class="text-center py-16 text-gray-400">
-          <div class="text-5xl mb-3">📅</div>
-          <p class="font-medium">No restaurants serving this day</p>
-          <p class="text-sm mt-1">Try another date above</p>
+          <div class="text-5xl mb-3">🔍</div>
+          <p class="font-medium">No restaurants found</p>
+          <p class="text-sm mt-1">Try a different search</p>
         </div>
 
         <div v-else class="flex flex-col gap-4">
           <div
             v-for="restaurant in filtered"
             :key="restaurant.id"
-            @click="restaurant.isOpen && router.push(`/restaurant/${restaurant.id}`)"
+            @click="restaurant.isOpen && serves(restaurant) && router.push(`/restaurant/${restaurant.id}`)"
           >
-            <RestaurantCard :restaurant="restaurant" />
+            <RestaurantCard
+              :restaurant="restaurant"
+              :available="serves(restaurant)"
+              unavailable-label="Not serving this day"
+            />
           </div>
         </div>
       </template>

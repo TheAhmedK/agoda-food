@@ -1,17 +1,15 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import type { OrderWindow } from '../data/types'
 import {
-  listEligibleServiceDates,
+  listPickerServiceDates,
   formatServiceDateLabel,
   DEFAULT_SERVING_DAYS,
-  defaultOrderWindow,
 } from '../lib/serviceDates'
 
 const props = defineProps<{
-  selectedDates: string[]
+  /** Dates this menu item is currently in the cart on (highlighted). */
+  activeDates: string[]
   servingDays?: number[]
-  orderWindow?: OrderWindow
 }>()
 
 const emit = defineEmits<{
@@ -19,18 +17,15 @@ const emit = defineEmits<{
 }>()
 
 const eligibleDates = computed(() =>
-  listEligibleServiceDates(
-    props.servingDays ?? DEFAULT_SERVING_DAYS,
-    props.orderWindow ?? defaultOrderWindow(),
-  ),
+  listPickerServiceDates(props.servingDays ?? DEFAULT_SERVING_DAYS),
 )
 
 function isSelected(dateStr: string) {
-  return props.selectedDates.includes(dateStr)
+  return props.activeDates.includes(dateStr)
 }
 
 function onToggle(dateStr: string) {
-  if (isSelected(dateStr) && props.selectedDates.length <= 1) return
+  if (isSelected(dateStr) && props.activeDates.length <= 1) return
   emit('toggle', dateStr)
 }
 </script>

@@ -2,9 +2,10 @@ export const MENU_ITEM_TAGS = ['Popular', 'Vegetarian', 'Vegan', 'Spicy', 'Glute
 export type MenuItemTag = (typeof MENU_ITEM_TAGS)[number]
 
 export interface OrderWindow {
-  openHour: number
-  closeHour: number
-  deliveryHour: number
+  /** Hour (0-23) on the previous day after which ordering closes. */
+  cutoffHour: number
+  /** Hour (0-23) food is ready for pickup on the delivery day. */
+  pickupHour: number
 }
 
 export interface MenuItem {
@@ -54,7 +55,8 @@ export interface CartItem {
   restaurantName: string
   quantity: number
   note: string
-  serviceDates: string[]
+  /** The single delivery day this line is for. Same item on another day is a separate line. */
+  serviceDate: string
 }
 
 export interface OrderItem {

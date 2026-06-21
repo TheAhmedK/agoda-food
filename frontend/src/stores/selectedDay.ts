@@ -1,20 +1,31 @@
 import { ref, watch } from 'vue'
 import { defineStore } from 'pinia'
-import { defaultSelectedServiceDate } from '../lib/serviceDates'
+import { defaultSelectedServiceDate, bangkokDateStr, listNextWeekdays } from '../lib/serviceDates'
 
 const STORAGE_KEY = 'agoda_food_selected_day_v1'
 
 function load(): string {
-  if (typeof sessionStorage === 'undefined') return defaultSelectedServiceDate()
+  const options = listNextWeekdays()
+  const fallback = options[0] ?? defaultSelectedServiceDate()
+  if (typeof sessionStorage === 'undefined') return fallback
   try {
-    return sessionStorage.getItem(STORAGE_KEY) ?? defaultSelectedServiceDate()
+    const stored = sessionStorage.getItem(STORAGE_KEY)
+    if (!stored || stored <= bangkokDateStr() || !options.includes(stored)) return fallback
+    return stored
   } catch {
-    return defaultSelectedServiceDate()
+    return fallback
   }
 }
 
 export const useSelectedDayStore = defineStore('selectedDay', () => {
   const serviceDate = ref<string>(load())
+
+  watch(serviceDate, (date) => {
+    const options = listNextWeekdays()
+    if (date <= bangkokDateStr() || !options.includes(date)) {
+      serviceDate.value = options[0] ?? defaultSelectedServiceDate()
+    }
+  }, { immediate: true })
 
   watch(serviceDate, (next) => {
     try {
